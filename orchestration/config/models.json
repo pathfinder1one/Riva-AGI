@@ -1,0 +1,32 @@
+{
+  "routing_engine": {
+    "provider": "laya",
+    "model_name": "laya-base-english",
+    "enabled": false,
+    "fallback_to_rules": true
+  },
+  "cloud_provider": {
+    "provider": "gemini",
+    "fast_model": "gemini-3.1-flash-lite",
+    "high_throughput_model": "gemini-3.5-flash-lite",
+    "reasoning_model": "gemini-3.8-flash",
+    "worker_model": "gemini-3.5-flash-lite"
+  },
+  "agent_model_mapping": {
+    "coder": {"provider": "gemini", "model": "gemini-3.5-flash-lite", "tier": "highest_frequency_15_rpm_500_rpd"},
+    "qa_tester": {"provider": "gemini", "model": "gemini-3.1-flash-lite", "tier": "highest_frequency_15_rpm_500_rpd"},
+    "researcher": {"provider": "gemini", "model": "gemini-3.5-flash-lite", "tier": "high_frequency_15_rpm_500_rpd"},
+    "intent_classifier": {"provider": "gemini", "model": "gemini-3.1-flash-lite", "tier": "high_frequency_15_rpm_500_rpd"},
+    "knowledge_agent": {"provider": "gemini", "model": "gemini-3.1-flash-lite", "tier": "high_frequency_15_rpm_500_rpd"},
+    "devops": {"provider": "gemini", "model": "gemini-3.1-flash-lite", "tier": "medium_frequency_15_rpm_500_rpd"},
+    "designer": {"provider": "gemini", "model": "gemini-3.1-flash-lite", "tier": "medium_frequency_15_rpm_500_rpd"},
+    "seo_specialist": {"provider": "gemini", "model": "gemini-3.1-flash-lite", "tier": "medium_frequency_15_rpm_500_rpd"},
+    "dummy_system": {"provider": "gemini", "model": "gemini-3.1-flash-lite", "tier": "medium_frequency_15_rpm_500_rpd"},
+    "planner": {"provider": "gemini", "model": "gemini-3.5-flash", "tier": "low_frequency_5_rpm_20_rpd_planner"},
+    "reviewer": {"provider": "gemini", "model": "gemini-3.7-flash", "tier": "low_frequency_5_rpm_20_rpd_evaluator"},
+    "writer": {"provider": "gemini", "model": "gemini-3.6-flash", "tier": "low_frequency_5_rpm_20_rpd_author"},
+    "reasoner": {"provider": "gemini", "model": "gemini-3.8-flash", "tier": "rare_frequency_5_rpm_20_rpd_deep_logic"},
+    "security_auditor": {"provider": "gemini", "model": "gemini-3-flash-preview", "tier": "rare_frequency_5_rpm_20_rpd_security"},
+    "data_analyst": {"provider": "gemini", "model": "gemini-robotics-er-2-preview", "tier": "rare_frequency_5_rpm_20_rpd_analytics"}
+  }
+}

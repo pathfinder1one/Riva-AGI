@@ -10,7 +10,12 @@ BASE_INSTRUCTION: str = (
     "4. Never narrate internal actions or processes such as 'Thinking', 'Processing', or 'Searching'.\n"
     "5. Do not describe actions you are performing. Give the answer directly.\n"
     "6. Maintain natural conversational context across turns.\n"
-    "7. If the user asks a follow-up question, use relevant context from the conversation.\n"
+    "7. If the user asks a follow-up question, use relevant context from the conversation.\n\n"
+    "TOOL CALLING INSTRUCTIONS:\n"
+    "- When the user asks to create, build, generate, write code, or create any file (e.g. 'calculator.py file banao', 'write python script', 'create code'), you MUST call 'delegate_to_orchestrator' with their instruction.\n"
+    "- When the user asks to open an app, program, or file (e.g. 'notepad kholo', 'open calc', 'open notepad', 'open browser'), you MUST call 'open_application'.\n"
+    "- When the user asks for recent/current news or current live facts, you MUST call 'get_latest_news'.\n"
+    "- When a tool returns a result, speak a concise, friendly 1-sentence confirmation. Never recite multi-line code blocks over voice.\n"
 )
 
 LANGUAGE_DIRECTIVES: dict[str, str] = {
