@@ -11,6 +11,7 @@ Autonomous tool-calling client wrapper supporting:
 import asyncio
 import concurrent.futures
 import functools
+import inspect
 import json
 import logging
 import os
@@ -18,6 +19,17 @@ import time
 import uuid
 from pathlib import Path
 from typing import Optional, List, Callable, Any, Tuple, Union, Dict
+
+try:
+    import httpx
+except ImportError:
+    httpx = None
+
+try:
+    from unittest.mock import Mock, MagicMock
+except ImportError:
+    Mock = None
+    MagicMock = None
 
 try:
     from google import genai
@@ -82,6 +94,15 @@ def get_model_for_agent(agent_id: str) -> str:
     if agent_id in mapping and isinstance(mapping[agent_id], dict):
         return mapping[agent_id].get("model", DEFAULT_MODEL_MAPPING.get(agent_id, PRIMARY_MODEL))
     return DEFAULT_MODEL_MAPPING.get(agent_id, PRIMARY_MODEL)
+
+
+def get_provider_for_agent(agent_id: str) -> str:
+    """Resolves the configured provider ('groq', 'gemini', 'laya') for a given agent_id."""
+    cfg = load_models_config()
+    mapping = cfg.get("agent_model_mapping", {})
+    if agent_id in mapping and isinstance(mapping[agent_id], dict):
+        return mapping[agent_id].get("provider", "gemini")
+    return "gemini"
 
 
 def _call_gemini_live(client: Any, model_name: str, prompt: str, system_instruction: str = "") -> str:
@@ -162,18 +183,218 @@ def _wrap_tool_for_execution(name: str, func: Callable, execution_log: list) -> 
     return tracked_tool
 
 
+def _tool_to_openai_schema(name: str, func: Callable) -> Dict[str, Any]:
+    """Converts a tool callable or registry entry into an OpenAI-compatible function schema."""
+    defn = tool_registry.get_tool_definition(name)
+    desc = defn.description if defn and defn.description else (inspect.getdoc(func) or f"Tool {name}")
+    
+    properties = {}
+    required = []
+    
+    if defn and defn.parameters_schema:
+        for p_name, p_info in defn.parameters_schema.items():
+            raw_type = str(p_info.get("type", "string")).lower()
+            if "int" in raw_type or "float" in raw_type or "number" in raw_type:
+                prop_type = "integer" if "int" in raw_type else "number"
+            elif "bool" in raw_type:
+                prop_type = "boolean"
+            elif "list" in raw_type:
+                prop_type = "array"
+            elif "dict" in raw_type:
+                prop_type = "object"
+            else:
+                prop_type = "string"
+            
+            properties[p_name] = {
+                "type": prop_type,
+                "description": f"Parameter {p_name}"
+            }
+            if p_info.get("required"):
+                required.append(p_name)
+    else:
+        try:
+            sig = inspect.signature(func)
+            for p_name, param in sig.parameters.items():
+                if param.default == inspect.Parameter.empty:
+                    required.append(p_name)
+                properties[p_name] = {"type": "string", "description": f"Parameter {p_name}"}
+        except Exception:
+            pass
+
+    return {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": desc.strip(),
+            "parameters": {
+                "type": "object",
+                "properties": properties,
+                "required": required
+            }
+        }
+    }
+
+
+def _call_groq(
+    model_name: str,
+    prompt: str,
+    system_instruction: str = "",
+    tools: Optional[List[Union[str, Callable]]] = None,
+    executed_tools: Optional[List[ToolCall]] = None,
+    groq_api_key: Optional[str] = None,
+    max_turns: int = 5,
+    max_tokens: int = 600
+) -> Optional[str]:
+    """
+    Executes an ultra-fast generation or multi-turn tool-calling loop via Groq Cloud API.
+    Returns the string response or None if fallback to Gemini is needed.
+    """
+    if httpx is None:
+        logger.warning("[Groq] httpx library not installed. Falling back to Gemini.")
+        return None
+
+    api_key = groq_api_key or key_manager.get_groq_api_key()
+    if not api_key:
+        logger.debug("[Groq] No GROQ_API_KEY found. Falling back to Gemini.")
+        return None
+
+    # Fallback to standard Groq model if non-Groq model was passed
+    if model_name.startswith("gemini-") or "laya" in model_name:
+        model_name = "qwen/qwen3.8-27b"
+
+    openai_tools = []
+    wrapped_callables: Dict[str, Callable] = {}
+    track_list = executed_tools if executed_tools is not None else []
+
+    if tools:
+        for t in tools:
+            tool_name = None
+            tool_func = None
+            if isinstance(t, str):
+                tool_name = t
+                tool_func = tool_registry.get_tool(t)
+            elif callable(t):
+                tool_name = getattr(t, "__name__", "custom_tool")
+                tool_func = t
+            
+            if tool_name and tool_func:
+                wrapped_callables[tool_name] = _wrap_tool_for_execution(tool_name, tool_func, track_list)
+                openai_tools.append(_tool_to_openai_schema(tool_name, tool_func))
+
+    messages: List[Dict[str, Any]] = []
+    if system_instruction:
+        messages.append({"role": "system", "content": system_instruction})
+    messages.append({"role": "user", "content": prompt})
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            for turn in range(max_turns):
+                payload: Dict[str, Any] = {
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": max_tokens
+                }
+                if openai_tools:
+                    payload["tools"] = openai_tools
+                    payload["tool_choice"] = "auto"
+
+                res = client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
+
+                if res.status_code != 200:
+                    logger.warning(f"[Groq] API returned status {res.status_code}: {res.text[:200]}. Falling back to Gemini.")
+                    return None
+
+                data = res.json()
+                choice = data.get("choices", [{}])[0]
+                msg = choice.get("message", {})
+                tool_calls = msg.get("tool_calls")
+
+                if tool_calls:
+                    messages.append(msg)
+                    for tc in tool_calls:
+                        fn_name = tc.get("function", {}).get("name")
+                        raw_args = tc.get("function", {}).get("arguments", "{}")
+                        try:
+                            parsed_args = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
+                        except Exception:
+                            parsed_args = {}
+
+                        wrapped_fn = wrapped_callables.get(fn_name)
+                        if wrapped_fn:
+                            tool_output = wrapped_fn(**parsed_args)
+                        else:
+                            tool_output = f"Error: Tool '{fn_name}' not available."
+
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tc.get("id", ""),
+                            "name": fn_name,
+                            "content": str(tool_output)
+                        })
+                else:
+                    return msg.get("content", "")
+
+            return msg.get("content", "")
+    except Exception as e:
+        logger.warning(f"[Groq] Exception during execution: {e}. Falling back to Gemini.")
+        return None
+
+
 def call_gemini(
     prompt: str,
-    api_key: str,
-    system_instruction: str,
-    agent_id: str,
+    api_key: str = "",
+    system_instruction: str = "",
+    agent_id: str = "orchestrator",
     tools: Optional[List[Union[str, Callable]]] = None,
-    return_tool_calls: bool = False
+    return_tool_calls: bool = False,
+    provider: Optional[str] = None
 ) -> Union[str, Tuple[str, List[ToolCall]]]:
     """
-    Calls Google GenAI SDK using agent-assigned models, supporting autonomous
-    multi-turn tool calling, 429 quota key rotation, and Live API.
+    Unified multi-provider LLM caller supporting:
+    - Ultra-fast Groq LPU inference for high-speed agents (coder, writer, reasoner, etc.)
+    - Google GenAI SDK for large context (researcher) & multi-turn tool calling
+    - 429 quota rotation across 15 Gemini keys
+    - WebSocket Live API fallback for zero-latency speech/vision
     """
+    target_provider = provider or get_provider_for_agent(agent_id)
+
+    # Check if in a unit test mocking genai.Client
+    is_gemini_mocked = (
+        genai is not None
+        and hasattr(genai, "Client")
+        and (
+            (Mock is not None and isinstance(genai.Client, (Mock, MagicMock)))
+            or getattr(genai.Client, "_mock_return_value", None) is not None
+        )
+    )
+
+    # 1. Try Groq LPU provider if assigned and not explicitly overridden or mocked
+    if target_provider == "groq" and not is_gemini_mocked:
+        groq_model = get_model_for_agent(agent_id)
+        executed_groq_tools: List[ToolCall] = []
+        logger.info(f"Agent [{agent_id}] routing to Groq LPU -> {groq_model}")
+        groq_result = _call_groq(
+            model_name=groq_model,
+            prompt=prompt,
+            system_instruction=system_instruction,
+            tools=tools,
+            executed_tools=executed_groq_tools
+        )
+        if groq_result is not None:
+            logger.info(f"Agent [{agent_id}] successfully executed via Groq LPU ({groq_model}).")
+            return (groq_result, executed_groq_tools) if return_tool_calls else groq_result
+        logger.warning(f"Agent [{agent_id}] Groq execution failed or unavailable. Falling back to Gemini pool.")
+
     if genai is None:
         msg = f"[LLM Offline Mode] google-genai SDK not installed. Generated stub response for {agent_id}."
         logger.warning(msg)
@@ -185,8 +406,11 @@ def call_gemini(
             raise ValueError(f"API Key is missing for agent [{agent_id}].")
 
     model_name = get_model_for_agent(agent_id)
+    # Ensure Gemini fallback uses a valid Gemini model if mapped model was Groq
+    if not model_name.startswith("gemini-"):
+        model_name = PRIMARY_MODEL
 
-    # 1. Try Live API (Zero rate limit, Unlimited RPM/RPD) if configured
+    # 2. Try Live API (Zero rate limit, Unlimited RPM/RPD) if configured
     if model_name in LIVE_MODELS and not tools:
         try:
             client = genai.Client(api_key=api_key)

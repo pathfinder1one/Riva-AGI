@@ -25,21 +25,21 @@ def clean_json_text(text: str) -> str:
     return cleaned.strip()
 
 DOMAIN_WORKSTREAMS = {
+    "research_analysis": {
+        "agents": ["researcher", "data_analyst", "knowledge_agent"],
+        "keywords": ["research", "search", "docs", "analyze", "metrics", "knowledge", "trend", "retrieval", "look up", "find"]
+    },
+    "content_docs": {
+        "agents": ["writer", "designer"],
+        "keywords": ["write", "doc", "readme", "report", "design", "ui", "mockup", "guide", "summary", "summarize", "briefing", "article", "draft"]
+    },
     "engineering": {
         "agents": ["coder", "devops", "security_auditor"],
-        "keywords": ["code", "script", "develop", "api", "database", "backend", "deploy", "docker", "server", "fastapi"]
+        "keywords": ["code", "script", "develop", "api", "database", "backend", "deploy", "docker", "server", "fastapi", "email", "gmail", "send", "program", "build"]
     },
     "verification": {
         "agents": ["qa_tester", "security_auditor"],
         "keywords": ["test", "verify", "audit", "benchmark", "validate", "qa", "pytest"]
-    },
-    "research_analysis": {
-        "agents": ["researcher", "data_analyst", "knowledge_agent"],
-        "keywords": ["research", "search", "docs", "analyze", "metrics", "knowledge", "trend", "retrieval"]
-    },
-    "content_docs": {
-        "agents": ["writer", "designer"],
-        "keywords": ["write", "doc", "readme", "report", "design", "ui", "mockup", "guide"]
     }
 }
 
@@ -55,13 +55,13 @@ def detect_workstreams(goal: str) -> List[str]:
 def plan_hierarchical_tasks(goal: str) -> List[Dict[str, Any]]:
     """
     Deterministic Hierarchical Task Decomposition (Pillar 2).
-    Generates cross-domain DAG tasks based on identified workstreams.
+    Generates cross-domain DAG tasks based on identified workstreams in <2ms.
     """
     domains = detect_workstreams(goal)
     tasks = []
     prev_task_id = None
-
     task_idx = 1
+
     # 1. Research / Knowledge Workstream if needed
     if "research_analysis" in domains:
         tid = f"task_{task_idx:02d}"
@@ -70,13 +70,14 @@ def plan_hierarchical_tasks(goal: str) -> List[Dict[str, Any]]:
             "task_id": tid,
             "agent": agent,
             "domain": "research_analysis",
-            "subtask": f"Research technical specifications and documentation for: {goal}",
+            "subtask": f"Research technical specifications, latest data, and documentation for: {goal}",
             "depends_on": []
         })
         prev_task_id = tid
         task_idx += 1
 
     # 2. Engineering Workstream
+    eng_task_id = None
     if "engineering" in domains or not tasks:
         tid = f"task_{task_idx:02d}"
         deps = [prev_task_id] if prev_task_id else []
@@ -84,7 +85,7 @@ def plan_hierarchical_tasks(goal: str) -> List[Dict[str, Any]]:
             "task_id": tid,
             "agent": "coder",
             "domain": "engineering",
-            "subtask": f"Implement core logic and files for: {goal}",
+            "subtask": f"Implement core logic, files, or execution scripts for: {goal}",
             "depends_on": deps
         })
         eng_task_id = tid
@@ -92,7 +93,7 @@ def plan_hierarchical_tasks(goal: str) -> List[Dict[str, Any]]:
     else:
         eng_task_id = prev_task_id
 
-    # 3. Verification & Content Workstreams (can run in parallel!)
+    # 3. Verification & Content Workstreams (run concurrently in parallel wave!)
     if "verification" in domains:
         tid = f"task_{task_idx:02d}"
         deps = [eng_task_id] if eng_task_id else []
@@ -112,7 +113,7 @@ def plan_hierarchical_tasks(goal: str) -> List[Dict[str, Any]]:
             "task_id": tid,
             "agent": "writer",
             "domain": "content_docs",
-            "subtask": f"Author comprehensive documentation and README for: {goal}",
+            "subtask": f"Author comprehensive documentation, briefing, or summary for: {goal}",
             "depends_on": deps
         })
         task_idx += 1
@@ -123,9 +124,19 @@ def plan_hierarchical_tasks(goal: str) -> List[Dict[str, Any]]:
 def planner_agent(task_data: InputData) -> AgentResponse:
     logger.info("Routing to Planner Agent")
     start_time = time.time()
-    
-    my_key = key_manager.get_api_key_for_role("PLANNER")
-    sys_prompt = """You are the Planner in an Agentic AI system.
+    prompt = (task_data.text_content or "").strip()
+
+    # 1. Fast-Path Deterministic Hierarchical Decomposition (<2ms)
+    # Generates cross-domain DAG plans instantly with zero LLM network round-trip overhead
+    hierarchical_plan = plan_hierarchical_tasks(prompt)
+    if hierarchical_plan and len(hierarchical_plan) > 0:
+        elapsed_ms = (time.time() - start_time) * 1000
+        logger.info(f"[Planner] Generated instant DAG plan via Fast-Path ({len(hierarchical_plan)} tasks) in {elapsed_ms:.1f}ms")
+        content = json.dumps(hierarchical_plan, indent=2)
+    else:
+        # Fallback to LLM if completely unrecognized domain or empty
+        my_key = key_manager.get_api_key_for_role("PLANNER")
+        sys_prompt = """You are the Planner in an Agentic AI system.
 Your job is to read the user's complex goal and break it down into a step-by-step DAG Execution Plan.
 Each step must be assigned to one of the specialized agents:
 'coder', 'writer', 'designer', 'qa_tester', 'data_analyst', 'devops', 'security_auditor', 'seo_specialist', 'researcher', 'reasoner', 'knowledge_agent'.
@@ -138,33 +149,20 @@ You MUST output ONLY a valid JSON array of objects with the following schema:
     "depends_on": []
   }
 ]"""
-    
-    prompt = task_data.text_content or ""
-    try:
-        content = call_gemini(
-            prompt=prompt, 
-            api_key=my_key, 
-            system_instruction=sys_prompt, 
-            agent_id="planner"
-        )
-    except Exception as e:
-        logger.warning(f"Planner LLM failed ({e}). Using hierarchical deterministic decomposition.")
-        content = ""
-
-    # Validate JSON or build fallback
-    cleaned = clean_json_text(content)
-    is_valid = False
-    if cleaned:
         try:
+            content = call_gemini(
+                prompt=prompt, 
+                api_key=my_key, 
+                system_instruction=sys_prompt, 
+                agent_id="planner"
+            )
+            cleaned = clean_json_text(content)
             parsed = json.loads(cleaned)
-            if isinstance(parsed, list) and len(parsed) > 0:
-                is_valid = True
-        except Exception:
-            is_valid = False
-
-    if not is_valid:
-        hierarchical_plan = plan_hierarchical_tasks(prompt)
-        content = json.dumps(hierarchical_plan, indent=2)
+            if not (isinstance(parsed, list) and len(parsed) > 0):
+                content = json.dumps(hierarchical_plan, indent=2)
+        except Exception as e:
+            logger.warning(f"Planner LLM failed ({e}). Defaulting to hierarchical plan.")
+            content = json.dumps(hierarchical_plan, indent=2)
 
     execution_time = (time.time() - start_time) * 1000
     

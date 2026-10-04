@@ -9,28 +9,36 @@ Manages Gemini API keys with 3-tier hierarchical resolution:
 Resolves Issue #4 (seo_specialist and dummy_system_agent WORKER_10 collision).
 """
 
-import os
+import json
 import logging
-from typing import Literal, List
+import os
+from pathlib import Path
+from typing import Dict, List, Literal, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "models.json"
+
 AgentLevel = Literal["CEO", "MANAGER", "TASK_DOER"]
 
 
-class KeyManager:
-    """
-    Manages the Gemini API keys assigned to the Agentic Company hierarchy.
-    Uses a 3-tier fallback to resolve key collisions between agents that
-    previously shared the same WORKER_N env var.
-    """
+def _load_role_aliases() -> Dict[str, List[str]]:
+    """Loads dynamic role key alias mapping from models.json configuration or returns configurable defaults."""
+    if CONFIG_PATH.exists():
+        try:
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                aliases = cfg.get("role_key_aliases")
+                if isinstance(aliases, dict):
+                    return aliases
+        except Exception as e:
+            logger.debug(f"Failed to load role_key_aliases from {CONFIG_PATH}: {e}")
 
-    # Maps each agent role to an ordered list of env vars to try.
-    # The first env var that is set and non-empty wins.
-    ROLE_ALIASES = {
+    # Standard configurable defaults
+    return {
         "SEO_SPECIALIST": ["GEMINI_API_KEY_SEO_SPECIALIST", "GEMINI_API_KEY_WORKER_10"],
         "DUMMY_SYSTEM": ["GEMINI_API_KEY_DUMMY_SYSTEM"],
         "DESIGNER": ["GEMINI_API_KEY_DESIGNER", "GEMINI_API_KEY_WORKER_5"],
@@ -48,6 +56,25 @@ class KeyManager:
         "REVIEWER": ["GEMINI_API_KEY_REVIEWER"],
         "ORCHESTRATOR": ["GEMINI_API_KEY_ORCHESTRATOR"],
     }
+
+
+class KeyManager:
+    """
+    Manages the Gemini API keys assigned to the Agentic Company hierarchy.
+    Dynamically discovers keys from configuration (models.json) and environment,
+    with 3-tier fallback to resolve key collisions.
+    """
+
+    def __init__(self):
+        self._custom_aliases: Optional[Dict[str, List[str]]] = None
+
+    @property
+    def ROLE_ALIASES(self) -> Dict[str, List[str]]:
+        return self._custom_aliases if self._custom_aliases is not None else _load_role_aliases()
+
+    @ROLE_ALIASES.setter
+    def ROLE_ALIASES(self, value: Dict[str, List[str]]):
+        self._custom_aliases = value
 
     def get_api_key_for_role(self, role: str) -> str:
         """
@@ -80,6 +107,10 @@ class KeyManager:
             if k.startswith("GEMINI_API_KEY") and v.strip() and v.strip() not in keys:
                 keys.append(v.strip())
         return keys
+
+    def get_groq_api_key(self) -> str:
+        """Retrieves the Groq API key from environment."""
+        return os.getenv("GROQ_API_KEY", "").strip()
 
     def get_fallback_keys(self, current_key: str) -> List[str]:
         """Returns other available keys excluding the current one for quota rotation."""

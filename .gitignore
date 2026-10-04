@@ -49,3 +49,6 @@ htmlcov/
 # Operating System
 .DS_Store
 Thumbs.db
+
+# Scratch artifacts
+scratch/

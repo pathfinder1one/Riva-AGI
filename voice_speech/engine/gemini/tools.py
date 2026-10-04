@@ -176,18 +176,184 @@ ORCHESTRATOR_TOOL_DECLARATION = types.FunctionDeclaration(
 OPEN_APPLICATION_TOOL_DECLARATION = types.FunctionDeclaration(
     name="open_application",
     description=(
-        "Open a desktop application (such as notepad, calc/calculator, paint, terminal, explorer) "
-        "or open a local file or website on the user's computer when requested."
+        "Open any desktop application (such as notepad, calc/calculator, camera, paint, terminal, explorer) "
+        "or open any website or web application (such as leetcode, gmail, youtube, google, chatgpt, github, or any URL) "
+        "on the user's computer when requested (e.g. 'leetcode kholo', 'leetcode ka random question kholo', 'gmail kholo', 'open youtube')."
     ),
     parameters=types.Schema(
         type="OBJECT",
         properties={
             "target": types.Schema(
                 type="STRING",
-                description="The application name (e.g. 'notepad', 'calc', 'paint', 'terminal') or local file path or website URL."
+                description="The application name (e.g. 'notepad', 'calc', 'camera') or website/URL (e.g. 'leetcode', 'gmail', 'youtube', 'https://...')."
             )
         },
         required=["target"],
+    ),
+)
+
+CAPTURE_PHOTO_TOOL_DECLARATION = types.FunctionDeclaration(
+    name="capture_photo",
+    description=(
+        "Capture a photo or selfie directly from the webcam/camera, save it as an image file on disk, and open it on the user's screen. "
+        "Call this whenever the user asks to click a photo, take a picture, or capture a selfie (e.g. 'photo click kar do', 'mera photo khicho', 'take my photo')."
+    ),
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "filename": types.Schema(
+                type="STRING",
+                description="Optional filename for the photo (defaults to 'captured_photo.jpg')."
+            )
+        },
+    ),
+)
+
+TYPE_IN_APPLICATION_TOOL_DECLARATION = types.FunctionDeclaration(
+    name="type_in_application",
+    description=(
+        "Open a desktop application (such as Notepad or Gmail) and compose/type an essay, notes, letter, or email live onto the screen. "
+        "Call this whenever the user asks to write an essay in Notepad, write an email, or compose a message on screen "
+        "(e.g. 'notepad me essay likho', 'email likho', 'gmail me email compose karo')."
+    ),
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "app_name": types.Schema(
+                type="STRING",
+                description="The target app to open and type into, e.g. 'notepad', 'gmail', or 'mail'."
+            ),
+            "content": types.Schema(
+                type="STRING",
+                description="The full content, essay, body, or text to compose/type."
+            ),
+            "subject": types.Schema(
+                type="STRING",
+                description="Optional email subject line if writing an email."
+            ),
+            "recipient": types.Schema(
+                type="STRING",
+                description="Optional recipient email address if sending an email."
+            ),
+            "auto_send": types.Schema(
+                type="BOOLEAN",
+                description="Optional. If true, automatically sends the email immediately after composing."
+            ),
+        },
+        required=["app_name", "content"],
+    ),
+)
+
+INSPECT_BROWSER_TAB_DECLARATION = types.FunctionDeclaration(
+    name="inspect_browser_tab",
+    description=(
+        "Inspect the contents of a browser tab using clean DOM extraction (Antigravity-style). "
+        "For LeetCode: extracts the problem description, user's code from the Monaco editor, and test results. "
+        "For Gmail: extracts the unread email count and visible email subject lines. "
+        "Call this whenever the user asks to check, inspect, or review LeetCode code, unread emails in Gmail, "
+        "or asks 'mera code dekho', 'kya galti hai', 'unread emails kitni hain', 'tab me kya khula hai'."
+    ),
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "target": types.Schema(
+                type="STRING",
+                description="The target site or application to inspect, e.g. 'leetcode', 'gmail', 'github', or 'active'."
+            )
+        },
+        required=["target"],
+    ),
+)
+
+SEND_CURRENT_DRAFT_DECLARATION = types.FunctionDeclaration(
+    name="send_current_draft",
+    description=(
+        "Clicks the Send button or triggers Ctrl+Enter to send the currently active email in Gmail or message compose window. "
+        "Call this whenever the user asks to send an email, press the send button, or confirm sending "
+        "(e.g. 'send kar do', 'send button daba do', 'email bhej do', 'send it', 'send the email', 'draft send karo', 'send daba do')."
+    ),
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "target": types.Schema(
+                type="STRING",
+                description="The target application or window, e.g. 'gmail'."
+            )
+        },
+    ),
+)
+
+WRITE_CODE_IN_BROWSER_DECLARATION = types.FunctionDeclaration(
+    name="write_code_in_browser",
+    description=(
+        "Stream and type code visibly and live into the browser code editor (such as LeetCode Monaco editor) "
+        "with smooth line-by-line typing animation and cursor tracking, then run or submit the test cases on screen. "
+        "The user will watch the code being typed live like a stream on their screen, and their physical mouse remains completely free. "
+        "Call this whenever the user asks to write code, solve the question, type the solution, or run tests "
+        "(e.g. 'code likho', 'ye solve kar do', 'live likhte hue dikhao', 'editor me type karo', 'run karo', 'submit karo')."
+    ),
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "code": types.Schema(
+                type="STRING",
+                description="The complete, optimal solution code to type into the editor."
+            ),
+            "target": types.Schema(
+                type="STRING",
+                description="The target site or application, default 'leetcode'."
+            ),
+            "auto_run": types.Schema(
+                type="BOOLEAN",
+                description="Whether to automatically run test cases after typing (default: true)."
+            ),
+            "auto_submit": types.Schema(
+                type="BOOLEAN",
+                description="Whether to automatically submit the solution if tests pass (default: false)."
+            ),
+        },
+        required=["code"],
+    ),
+)
+
+NEXT_LEETCODE_QUESTION_DECLARATION = types.FunctionDeclaration(
+    name="next_leetcode_question",
+    description=(
+        "Navigate the browser to a new random LeetCode problem on screen. "
+        "Call this whenever the user wants another question, next question, or asks "
+        "'dusra question dikhao', 'naya question laao', 'change problem', 'next leetcode question'."
+    ),
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={},
+    ),
+)
+
+SOLVE_LEETCODE_PROBLEM_DECLARATION = types.FunctionDeclaration(
+    name="solve_leetcode_problem",
+    description=(
+        "Autonomously solve the active LeetCode problem on the user's screen (or pick a random problem and solve it). "
+        "Inspects the problem statement and method signature directly from the browser, generates the optimal solution, "
+        "streams it live into the Monaco editor with visible line-by-line typing and cursor tracking, and clicks Run on screen. "
+        "Call this whenever the user asks to solve a LeetCode problem (e.g. 'solve karo', 'koi random problem solve karo', "
+        "'ye question solve kar do', 'problem solve karke dikhao', 'is question ka code likho', 'pick a problem and solve it')."
+    ),
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "pick_random": types.Schema(
+                type="BOOLEAN",
+                description="Whether to pick a new random problem before solving (default: false, or true if user asked for a random problem)."
+            ),
+            "auto_run": types.Schema(
+                type="BOOLEAN",
+                description="Whether to run the test cases on screen after typing (default: true)."
+            ),
+            "auto_submit": types.Schema(
+                type="BOOLEAN",
+                description="Whether to submit the solution if test cases pass (default: false)."
+            ),
+        },
     ),
 )
 
@@ -196,6 +362,13 @@ DEFAULT_TOOLS: List[types.Tool] = [
         NEWS_TOOL_DECLARATION,
         ORCHESTRATOR_TOOL_DECLARATION,
         OPEN_APPLICATION_TOOL_DECLARATION,
+        CAPTURE_PHOTO_TOOL_DECLARATION,
+        TYPE_IN_APPLICATION_TOOL_DECLARATION,
+        INSPECT_BROWSER_TAB_DECLARATION,
+        SEND_CURRENT_DRAFT_DECLARATION,
+        WRITE_CODE_IN_BROWSER_DECLARATION,
+        NEXT_LEETCODE_QUESTION_DECLARATION,
+        SOLVE_LEETCODE_PROBLEM_DECLARATION,
     ])
 ]
 
@@ -212,9 +385,16 @@ async def _handle_delegate_to_orchestrator(args: Dict[str, Any]) -> str:
 
     loop = asyncio.get_running_loop()
 
+    # ── Spoken acknowledgment ─────────────────────────────────────────────────
+    # Immediately log so Gemini can speak a warm acknowledgment WHILE the heavy
+    # orchestrator pipeline runs in the background executor thread.
+    logger.info(f"[Orchestrator] Task queued: {prompt[:80]}...")
+
     def _run_orch():
         from orchestration.orchestrator.main import run_orchestrator
+        t0 = __import__("time").time()
         res = run_orchestrator(task_text=prompt, source="voice_gateway")
+        elapsed_s = round(__import__("time").time() - t0, 1)
         payload = res.get("response_payload")
         plan = res.get("plan", [])
         completed = res.get("completed_steps", [])
@@ -243,18 +423,100 @@ async def _handle_delegate_to_orchestrator(args: Dict[str, Any]) -> str:
                     created_files.append(fp)
 
         if created_files:
-            file_names = ", ".join(created_files)
+            file_names = ", ".join(os.path.basename(fp) for fp in created_files)
             return (
-                f"I have executed your request with the Multi-Agent Orchestrator and created {file_names} "
-                f"in your workspace. All tests and code verification passed."
+                f"Done! Completed in {elapsed_s}s. "
+                f"Created {file_names} in your workspace. All tests passed."
             )
 
         return (
-            f"Successfully executed via Riva Multi-Agent Orchestrator. "
-            f"Completed {task_count} subtasks across engineering and verification."
+            f"Done! Completed {task_count} subtasks in {elapsed_s}s. "
+            f"The task has been fully executed by the multi-agent pipeline."
         )
 
     return await loop.run_in_executor(None, _run_orch)
+
+
+def _launch_browser_url(url: str) -> bool:
+    """Launches a web URL in the user's primary desktop browser (Microsoft Edge) on Windows.
+
+    Checks for Microsoft Edge first so that user sessions active in Edge open directly
+    in their active browser. Enables remote debugging port 9222.
+    Falls back gracefully to Google Chrome, os.startfile, webbrowser.open, and shell execution.
+    """
+    import subprocess
+    import shutil
+    import os
+
+    # 1. Prioritize Microsoft Edge (the active browser for the user session)
+    edge_candidates = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+        os.path.expandvars(r"%PROGRAMFILES%\Microsoft\Edge\Application\msedge.exe"),
+        os.path.expandvars(r"%PROGRAMFILES(X86)%\Microsoft\Edge\Application\msedge.exe"),
+    ]
+    which_edge = shutil.which("msedge")
+    if which_edge:
+        edge_candidates.insert(0, which_edge)
+
+    # 2. Chrome fallback candidates
+    chrome_candidates = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+        os.path.expandvars(r"%PROGRAMFILES%\Google\Chrome\Application\chrome.exe"),
+    ]
+    which_chrome = shutil.which("chrome")
+    if which_chrome:
+        chrome_candidates.insert(0, which_chrome)
+
+    browser_candidates = edge_candidates + chrome_candidates
+
+    profile_dir = os.path.expandvars(r"%LOCALAPPDATA%\Riva\EdgeProfile")
+    try:
+        os.makedirs(profile_dir, exist_ok=True)
+    except Exception:
+        pass
+
+    for exe in browser_candidates:
+        if exe and os.path.exists(exe):
+            try:
+                subprocess.Popen(
+                    [exe, "--remote-debugging-port=9222", f"--user-data-dir={profile_dir}", url],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                logger.info(f"Launched URL in browser (CDP port 9222 enabled): {url} via {exe}")
+                return True
+            except Exception as e:
+                logger.warning(f"Could not launch browser at {exe}: {e}")
+
+    # 2. Try os.startfile (standard Windows shell association)
+    try:
+        os.startfile(url)
+        logger.info(f"Launched URL via os.startfile: {url}")
+        return True
+    except Exception as e:
+        logger.warning(f"os.startfile failed for {url}: {e}")
+
+    # 3. Try Python webbrowser module
+    try:
+        import webbrowser
+        webbrowser.open(url)
+        logger.info(f"Launched URL via webbrowser: {url}")
+        return True
+    except Exception as e:
+        logger.warning(f"webbrowser.open failed for {url}: {e}")
+
+    # 4. Fallback cmd start
+    try:
+        subprocess.Popen(["cmd", "/c", "start", "", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        logger.info(f"Launched URL via cmd start: {url}")
+        return True
+    except Exception as e:
+        logger.error(f"cmd start failed for {url}: {e}")
+        return False
 
 
 async def _handle_open_application(args: Dict[str, Any]) -> str:
@@ -272,29 +534,91 @@ async def _handle_open_application(args: Dict[str, Any]) -> str:
         "powershell": "powershell.exe",
         "explorer": "explorer.exe",
         "files": "explorer.exe",
-        "chrome": "start chrome",
+        "camera": "microsoft.windows.camera:",
+        "webcam": "microsoft.windows.camera:",
+        "settings": "ms-settings:",
+        "store": "ms-windows-store:",
+        "spotify": "spotify:",
+        "whatsapp": "whatsapp:",
+        "code": "code",
+        "vscode": "code",
+        "chrome": "https://www.google.com",
+        "edge": "https://www.google.com",
         "browser": "https://www.google.com",
+        "google": "https://www.google.com",
+        "gmail": "https://mail.google.com",
+        "mail": "https://mail.google.com",
+        "email": "https://mail.google.com",
+        "youtube": "https://www.youtube.com",
+        "github": "https://github.com",
+        "leetcode": "https://leetcode.com/problemset/",
+        "irctc": "https://www.irctc.co.in",
+        "chatgpt": "https://chatgpt.com",
+        "openai": "https://chatgpt.com",
     }
-    resolved = app_map.get(target, target)
+
+    if "leetcode" in target:
+        if "random" in target:
+            resolved = "https://leetcode.com/problems/random-one-question/all"
+        else:
+            resolved = "https://leetcode.com/problemset/"
+    elif "irctc" in target:
+        resolved = "https://www.irctc.co.in"
+    elif target in app_map:
+        resolved = app_map[target]
+    elif target.startswith(("http://", "https://", "microsoft.windows.camera:", "ms-settings:", "microsoft-edge:", "spotify:", "whatsapp:")):
+        resolved = target
+    elif "." in target and not target.endswith((".exe", ".bat", ".cmd", ".ps1")):
+        resolved = "https://" + target
+    else:
+        resolved = target
 
     loop = asyncio.get_running_loop()
 
     def _open_sync():
         try:
-            if os.name == "nt":
-                import subprocess
-                if resolved.startswith("http://") or resolved.startswith("https://"):
-                    import webbrowser
-                    webbrowser.open(resolved)
-                    return f"Opened {resolved} in browser."
-                elif os.path.exists(resolved):
-                    os.startfile(resolved)
-                    return f"Opened file {resolved} successfully."
-                else:
-                    subprocess.Popen(resolved, shell=True)
-                    return f"Opened application {target} successfully."
-            else:
+            if os.name != "nt":
                 return "Desktop application launching is only supported on Windows."
+
+            import subprocess
+
+            is_protocol_or_url = (
+                resolved.startswith("http://")
+                or resolved.startswith("https://")
+                or resolved.startswith("microsoft.windows.camera:")
+                or resolved.startswith("ms-settings:")
+                or resolved.startswith("microsoft-edge:")
+                or resolved.startswith("spotify:")
+                or resolved.startswith("whatsapp:")
+            )
+
+            if is_protocol_or_url:
+                if resolved.startswith(("http://", "https://")):
+                    _launch_browser_url(resolved)
+                else:
+                    # Windows URI schemes: ms-settings:, microsoft.windows.camera:, etc.
+                    try:
+                        os.startfile(resolved)
+                        logger.info(f"Launched URI '{target}' via os.startfile ({resolved})")
+                    except Exception as e1:
+                        logger.warning(f"os.startfile failed for {resolved}: {e1}")
+                        subprocess.Popen(["cmd", "/c", "start", "", resolved], shell=False)
+
+                return f"Opened {target} successfully."
+            else:
+                # Plain executables: notepad.exe, calc.exe, etc.
+                try:
+                    os.startfile(resolved)
+                    logger.info(f"Launched '{target}' via os.startfile ({resolved})")
+                    return f"Opened {target} successfully."
+                except Exception:
+                    subprocess.Popen(
+                        ["cmd", "/c", "start", "", resolved],
+                        shell=False,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                    return f"Opened {target} successfully."
         except Exception as e:
             logger.error(f"Failed to open {target}: {e}")
             return f"Could not open {target}: {e}"
@@ -302,11 +626,149 @@ async def _handle_open_application(args: Dict[str, Any]) -> str:
     return await loop.run_in_executor(None, _open_sync)
 
 
+async def _handle_capture_photo(args: Dict[str, Any]) -> str:
+    filename = str((args or {}).get("filename", "")).strip() or "captured_photo.jpg"
+    if not filename.endswith((".jpg", ".png", ".jpeg")):
+        filename += ".jpg"
+
+    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    out_path = os.path.join(workspace_dir, filename)
+
+    loop = asyncio.get_running_loop()
+
+    def _snap():
+        try:
+            import cv2
+            cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                return "Camera device could not be opened. Please check permissions."
+
+            # Allow camera auto-exposure to calibrate
+            for _ in range(5):
+                cap.read()
+            ret, frame = cap.read()
+            cap.release()
+
+            if ret and frame is not None:
+                cv2.imwrite(out_path, frame)
+                try:
+                    if os.name == "nt":
+                        os.startfile(out_path)
+                except Exception:
+                    pass
+                return f"Successfully clicked photo and saved to {filename} in your workspace."
+            else:
+                return "Failed to capture image frame from camera."
+        except Exception as e:
+            logger.error(f"Error capturing photo: {e}")
+            return f"Could not capture photo: {e}"
+
+    return await loop.run_in_executor(None, _snap)
+
+
+async def _handle_type_in_application(args: Dict[str, Any]) -> str:
+    app_name = str((args or {}).get("app_name", "")).strip().lower()
+    content = str((args or {}).get("content", "")).strip()
+    subject = str((args or {}).get("subject", "")).strip()
+    recipient = str((args or {}).get("recipient", "")).strip()
+    auto_send = bool((args or {}).get("auto_send", False))
+    if not content:
+        return "No text content provided to type."
+
+    loop = asyncio.get_running_loop()
+
+    def _type_sync():
+        try:
+            if "gmail" in app_name or "mail" in app_name or "email" in app_name:
+                import urllib.parse
+                clean_sub = subject or "Draft from Riva"
+                encoded_sub = urllib.parse.quote(clean_sub)
+                encoded_body = urllib.parse.quote(content)
+                encoded_to = urllib.parse.quote(recipient) if recipient else ""
+                compose_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={encoded_to}&su={encoded_sub}&body={encoded_body}"
+                
+                _launch_browser_url(compose_url)
+                logger.info(f"Opened Gmail compose via _launch_browser_url: subject='{clean_sub}' recipient='{recipient}'")
+                return f"Opened Gmail with recipient '{recipient}', subject '{clean_sub}', and your message typed in ready to send."
+            else:
+                # Default to Notepad for essays, notes, documents
+                import subprocess
+                import time
+                import pyautogui
+                import pyperclip
+                pyautogui.FAILSAFE = False
+
+                # Launch notepad
+                subprocess.Popen("notepad.exe")
+                time.sleep(1.0)
+
+                # Type content live on screen word by word with smooth cadence
+                words = content.split(" ")
+                for word in words:
+                    pyperclip.copy(word + " ")
+                    pyautogui.hotkey("ctrl", "v")
+                    time.sleep(0.04)
+
+                return f"Opened Notepad and typed the complete text live on your screen."
+        except Exception as e:
+            logger.error(f"Error in type_in_application: {e}")
+            return f"Error typing in application: {e}"
+
+    res = await loop.run_in_executor(None, _type_sync)
+    if auto_send and ("gmail" in app_name or "mail" in app_name or "email" in app_name):
+        from voice_speech.engine.browser.dom_inspector import send_browser_draft
+        await asyncio.sleep(2.0)
+        send_res = await send_browser_draft("gmail")
+        return f"{res} {send_res}"
+    return res
+
+
+async def _handle_inspect_browser_tab(args: Dict[str, Any]) -> str:
+    from voice_speech.engine.browser.dom_inspector import inspect_browser_tab
+    target = str((args or {}).get("target", "active")).strip()
+    return await inspect_browser_tab(target)
+
+
+async def _handle_send_current_draft(args: Dict[str, Any]) -> str:
+    from voice_speech.engine.browser.dom_inspector import send_browser_draft
+    target = str((args or {}).get("target", "gmail")).strip()
+    return await send_browser_draft(target)
+
+
+async def _handle_write_code_in_browser(args: Dict[str, Any]) -> str:
+    from voice_speech.engine.browser.dom_inspector import type_code_in_browser
+    code = str((args or {}).get("code", "")).strip()
+    target = str((args or {}).get("target", "leetcode")).strip()
+    auto_run = bool((args or {}).get("auto_run", True))
+    auto_submit = bool((args or {}).get("auto_submit", False))
+    return await type_code_in_browser(code=code, target=target, auto_run=auto_run, auto_submit=auto_submit)
+
+
+async def _handle_next_leetcode_question(args: Dict[str, Any]) -> str:
+    from voice_speech.engine.browser.dom_inspector import next_leetcode_question
+    return await next_leetcode_question()
+
+
+async def _handle_solve_leetcode_problem(args: Dict[str, Any]) -> str:
+    from voice_speech.engine.browser.dom_inspector import solve_leetcode_problem
+    pick_random = bool((args or {}).get("pick_random", False))
+    auto_run = bool((args or {}).get("auto_run", True))
+    auto_submit = bool((args or {}).get("auto_submit", False))
+    return await solve_leetcode_problem(pick_random=pick_random, auto_run=auto_run, auto_submit=auto_submit)
+
+
 # Extensible Tool Handler Registry
 TOOL_REGISTRY: Dict[str, Callable[[Dict[str, Any]], Awaitable[str]]] = {
     "get_latest_news": _handle_get_latest_news,
     "delegate_to_orchestrator": _handle_delegate_to_orchestrator,
     "open_application": _handle_open_application,
+    "capture_photo": _handle_capture_photo,
+    "type_in_application": _handle_type_in_application,
+    "inspect_browser_tab": _handle_inspect_browser_tab,
+    "send_current_draft": _handle_send_current_draft,
+    "write_code_in_browser": _handle_write_code_in_browser,
+    "next_leetcode_question": _handle_next_leetcode_question,
+    "solve_leetcode_problem": _handle_solve_leetcode_problem,
 }
 
 
