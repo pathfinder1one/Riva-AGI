@@ -2,7 +2,7 @@
 
 ## 1. High-Level Status Dashboard
 - **Current Milestone**: Track 1 Multi-Agent Orchestration & Voice Gateway Live Testing
-- **Automated Test Count**: 85 passing tests across 15 unit and integration suites (100% pass rate)
+- **Automated Test Count**: 105 passing tests across 16 unit and integration suites (100% pass rate)
 - **Live System Status**: FastAPI voice/web server ACTIVE & RUNNING on `http://localhost:8000`; Browser Web Audio + WebSocket live bridge active.
 
 ---
@@ -58,6 +58,15 @@
   - Text agents previously invoked `gemini-3.8-live` and `gemini-3.1-flash-live-preview` via WebSockets with `response_modalities=["AUDIO"]`, causing speech-rate audio synthesis (~150 words/min) and conversational turn truncation.
   - Evaluated Google AI Studio quota tier: identified that `gemini-3.5-flash-lite` and `gemini-3.1-flash-lite` have **500 RPD** (25x higher than 20 RPD on 3.5/3.8 Flash) and sub-second generation (~0.9s - 2.8s).
 - [x] Configured `models.json` and `DEFAULT_MODEL_MAPPING` in `llm.py` to route all text agents to `gemini-3.5-flash-lite`.
+
+### Milestone 10: Main Repo (`upstream/main`) PR Merge & Autonomous Tool Calling Integration
+- [x] Fetched and merged `upstream/main` incorporating PR #37 (chirag-gupta-07) and PR #35 (Alexx3890):
+  - Autonomous multi-turn function calling engine (`_wrap_tool_for_execution`) inside `call_gemini`.
+  - Rich real-time web retrieval via Tavily AI Search with NewsAPI & Google News RSS fallbacks.
+  - Preserved user's exact 3-tier KeyManager configuration in [`orchestration/orchestrator/config.py`](file:///c:/Coding/New%20folder/github%20riva/Riva-AGI/orchestration/orchestrator/config.py).
+  - Enhanced Voice Gateway with `delegate_to_orchestrator`, `open_application`, and `get_latest_news` tools.
+  - **105 out of 105 automated tests passing** across unit, integration, and voice suites (100% pass rate).
+
 - [x] Removed truncation filters in `main.py` (prior completed artifacts context).
 - [x] Added real runtime latency telemetry (`total_latency_ms`) in `main.py` and `aggregator.py`.
 - [x] 100% automated test pass rate maintained: 85 passed in 6.48s.
