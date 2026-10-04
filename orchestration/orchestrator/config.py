@@ -11,7 +11,7 @@ Resolves Issue #4 (seo_specialist and dummy_system_agent WORKER_10 collision).
 
 import os
 import logging
-from typing import Literal
+from typing import Literal, List
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -72,6 +72,18 @@ class KeyManager:
             os.getenv("GEMINI_API_KEY_ORCHESTRATOR", "")
             or os.getenv("GEMINI_API_KEY", "")
         )
+
+    def get_all_available_keys(self) -> List[str]:
+        """Returns all non-empty Gemini API keys configured in the environment."""
+        keys = []
+        for k, v in os.environ.items():
+            if k.startswith("GEMINI_API_KEY") and v.strip() and v.strip() not in keys:
+                keys.append(v.strip())
+        return keys
+
+    def get_fallback_keys(self, current_key: str) -> List[str]:
+        """Returns other available keys excluding the current one for quota rotation."""
+        return [k for k in self.get_all_available_keys() if k != current_key]
 
 
 # Singleton instance used by the Orchestrator and Agent Factory
