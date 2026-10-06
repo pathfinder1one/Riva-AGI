@@ -10,7 +10,10 @@ import os
 import re
 from enum import Enum
 from typing import Dict, Any, Tuple, List, Optional
-from orchestration.orchestrator.laya_engine import laya_engine
+try:
+    from orchestration.orchestrator.laya_engine import laya_engine
+except ImportError:
+    laya_engine = None
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +143,7 @@ class SecurityGate:
                     logger.critical(f"[SecurityGate] BLOCKED Blacklisted command pattern: {command}")
                     return False, f"Blocked: Command matches security blacklist pattern: {command}"
 
-            risk_score = laya_engine.evaluate_risk(command)
+            risk_score = laya_engine.evaluate_risk(command) if laya_engine is not None else 0.0
             logger.info(f"[SecurityGate] Laya risk score for '{command}': {risk_score:.2f}")
             if risk_score > 0.70:
                 logger.critical(f"[SecurityGate] BLOCKED High-Risk command (score {risk_score}): {command}")
