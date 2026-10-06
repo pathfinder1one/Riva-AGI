@@ -31,10 +31,14 @@ class LayaEngine:
 
     def __init__(self, model_name: str = "laya-base-english", enabled: bool = None):
         if enabled is None:
-            from orchestration.orchestrator.llm import load_models_config
-            cfg = load_models_config().get("routing_engine", {})
-            self.enabled = cfg.get("enabled", False)
-            self.model_name = cfg.get("model_name", model_name)
+            try:
+                from orchestration.orchestrator.llm import load_models_config
+                cfg = load_models_config().get("routing_engine", {})
+                self.enabled = cfg.get("enabled", False)
+                self.model_name = cfg.get("model_name", model_name)
+            except Exception:
+                self.enabled = False
+                self.model_name = model_name
         else:
             self.enabled = enabled
             self.model_name = model_name
