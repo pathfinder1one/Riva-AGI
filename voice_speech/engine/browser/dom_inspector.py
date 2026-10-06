@@ -225,7 +225,45 @@ def get_browser_window_info(target_hint: str = "") -> Optional[Dict[str, Any]]:
     return None
 
 
-def extract_leetcode_problem_title(raw_title: str) -> str:
+def is_leetcode_problem_title(raw_title: str) -> bool:
+    """
+    Checks if a browser window title corresponds to an active LeetCode coding problem page
+    with a code editor, as opposed to the problemset list, discuss board, contest, or profile.
+    """
+    if not raw_title or not raw_title.strip():
+        return False
+    t_low = raw_title.lower()
+    non_problem_terms = [
+        "problems - leetcode", "problemset", "discuss", "explore",
+        "contest", "fingertips", "interview", "leaderboard",
+        "study plan", "assessment", "announcement"
+    ]
+    for term in non_problem_terms:
+        if term in t_low:
+            return False
+
+    clean = raw_title
+    for suffix in [
+        "- Personal - Microsoft Edge",
+        "- Profile 1 - Microsoft Edge",
+        "- Microsoft Edge",
+        "- Google Chrome",
+        "- Chromium",
+        " - Microsoft? Edge",
+    ]:
+        clean = clean.replace(suffix, "").strip()
+
+    clean_no_more = re.sub(r"\s+and\s+\d+\s+more.*", "", clean, flags=re.IGNORECASE).strip()
+    match = re.search(r"^([\d]+\.\s*[^-\|]+|[^-\|]+)\s*-\s*LeetCode", clean_no_more, re.IGNORECASE)
+    if match:
+        extracted = match.group(1).strip().lower()
+        if extracted in ["problems", "leetcode", "discuss", "contest", "explore"]:
+            return False
+        return True
+    return False
+
+
+def extract_leetcode_problem_title(raw_title: str, fallback: str = "Two Sum") -> str:
     """Extracts clean problem title from browser window title."""
     clean = raw_title
     for suffix in [
@@ -238,14 +276,17 @@ def extract_leetcode_problem_title(raw_title: str) -> str:
     ]:
         clean = clean.replace(suffix, "").strip()
 
+    clean_no_more = re.sub(r"\s+and\s+\d+\s+more.*", "", clean, flags=re.IGNORECASE).strip()
     # Match "2884. Modify Columns - LeetCode" or "Two Sum - LeetCode"
-    match = re.search(r"^([\d]+\.\s*[^-\|]+|[^-\|]+)\s*-\s*LeetCode", clean, re.IGNORECASE)
+    match = re.search(r"^([\d]+\.\s*[^-\|]+|[^-\|]+)\s*-\s*LeetCode", clean_no_more, re.IGNORECASE)
     if match:
         extracted = match.group(1).strip()
-        if "problems" not in extracted.lower() and "leetcode" not in extracted.lower():
+        ext_low = extracted.lower()
+        non_problem_terms = ["problems", "leetcode", "discuss", "contest", "explore", "fingertips"]
+        if not any(term in ext_low for term in non_problem_terms):
             return extracted
 
-    return "Two Sum"
+    return fallback
 
 
 async def type_code_natively_in_window(
@@ -323,13 +364,50 @@ async def solve_leetcode_natively(
     """
     Natively inspects and solves the active LeetCode problem directly on the user's
     open Edge session without needing CDP port 9222 or any duplicate browser instances.
+    If the user is on the problemset, discuss board, or homepage, it automatically navigates
+    their open browser to an actual coding problem page first.
     """
     bring_browser_window_to_foreground("leetcode")
     await asyncio.sleep(0.4)
 
     win_info = get_browser_window_info("leetcode")
     raw_title = win_info.get("title", "") if win_info else ""
-    problem_title = extract_leetcode_problem_title(raw_title)
+    on_problem = is_leetcode_problem_title(raw_title)
+
+    # If pick_random or user is NOT on an active coding problem page (e.g. on Problemset, Discuss, or Home)
+    if pick_random or not on_problem:
+        logger.info(f"[DOM Inspector] Window '{raw_title}' is not an active problem page (or pick_random=True). Navigating to a real problem natively...")
+        try:
+            import pyautogui
+            import pyperclip
+            pyautogui.FAILSAFE = False
+
+            bring_browser_window_to_foreground("leetcode")
+            await asyncio.sleep(0.3)
+            # Focus address bar in Edge / Chrome (Ctrl+L)
+            pyautogui.hotkey("ctrl", "l")
+            await asyncio.sleep(0.25)
+
+            # Paste LeetCode random question endpoint (redirects to a real problem with editor)
+            dest_url = "https://leetcode.com/problems/random-one-question/all"
+            pyperclip.copy(dest_url)
+            pyautogui.hotkey("ctrl", "v")
+            await asyncio.sleep(0.15)
+            pyautogui.press("enter")
+
+            # Wait up to 6 seconds for the problem page to redirect and title to update
+            for _ in range(12):
+                await asyncio.sleep(0.5)
+                win_info = get_browser_window_info("leetcode")
+                curr_title = win_info.get("title", "") if win_info else ""
+                if is_leetcode_problem_title(curr_title):
+                    raw_title = curr_title
+                    on_problem = True
+                    break
+        except Exception as nav_err:
+            logger.warning(f"[DOM Inspector] Native navigation error: {nav_err}")
+
+    problem_title = extract_leetcode_problem_title(raw_title, fallback="Two Sum")
 
     logger.info(f"[DOM Inspector] Native LeetCode solver targeting problem: '{problem_title}' (raw title: '{raw_title}')")
 
@@ -1164,32 +1242,52 @@ async def solve_leetcode_problem(
             target_page = None
             problem_page = None
             problemset_page = None
+            other_lc_page = None
             for context in browser.contexts:
                 for page in context.pages:
                     url_low = page.url.lower()
                     if "leetcode.com/problems/" in url_low and "random-one-question" not in url_low:
                         problem_page = page
                         break
-                    elif "leetcode.com" in url_low:
+                    elif "leetcode.com/problemset" in url_low:
                         problemset_page = page
+                    elif "leetcode.com" in url_low:
+                        other_lc_page = page
                 if problem_page:
                     break
 
-            target_page = problem_page or problemset_page
+            target_page = problem_page or problemset_page or other_lc_page
 
             if not target_page:
                 logger.info("[DOM Inspector] No LeetCode tab in CDP. Solving natively on user's open Edge session...")
                 return await solve_leetcode_natively(pick_random=pick_random, auto_run=auto_run, auto_submit=auto_submit)
 
-
             current_url = target_page.url.lower()
-            if pick_random or ("problemset" in current_url and not problem_page) or current_url.rstrip("/").endswith("leetcode.com"):
+            needs_nav = (
+                pick_random
+                or not problem_page
+                or "problems/" not in current_url
+                or "random-one-question" in current_url
+                or "discuss" in current_url
+                or "explore" in current_url
+            )
+            if needs_nav:
                 dest = f"https://leetcode.com/problems/random-one-question/all?t={int(__import__('time').time())}"
-                await target_page.goto(dest, wait_until="domcontentloaded", timeout=15000)
-                await asyncio.sleep(2.5)
+                await target_page.goto(dest, wait_until="domcontentloaded", timeout=20000)
+                # Wait for LeetCode to redirect from random-one-question to /problems/<slug>/
+                for _ in range(12):
+                    await asyncio.sleep(0.5)
+                    if "problems/" in target_page.url.lower() and "random-one-question" not in target_page.url.lower():
+                        break
 
             await target_page.bring_to_front()
             bring_browser_window_to_foreground("leetcode")
+
+            # Wait for Monaco editor or description content container
+            try:
+                await target_page.wait_for_selector(".monaco-editor, [data-track-load='description_content']", timeout=8000)
+            except Exception:
+                pass
 
             # Extract exact problem specifications and method signature
             extracted = await target_page.evaluate("""() => {

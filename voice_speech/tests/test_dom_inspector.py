@@ -194,12 +194,23 @@ async def test_dispatch_tool_call_solve_leetcode_problem():
 
 
 def test_extract_leetcode_problem_title():
-    from voice_speech.engine.browser.dom_inspector import extract_leetcode_problem_title
+    from voice_speech.engine.browser.dom_inspector import extract_leetcode_problem_title, is_leetcode_problem_title
 
     assert extract_leetcode_problem_title("2884. Modify Columns - LeetCode - Personal - Microsoft Edge") == "2884. Modify Columns"
     assert extract_leetcode_problem_title("Two Sum - LeetCode - Microsoft Edge") == "Two Sum"
     assert extract_leetcode_problem_title("1. Two Sum - LeetCode") == "1. Two Sum"
     assert extract_leetcode_problem_title("Problems - LeetCode - Personal - Microsoft Edge") == "Two Sum"
+    assert extract_leetcode_problem_title("LeetCode at Your Fingertips - LeetCode", fallback="Two Sum") == "Two Sum"
+    assert extract_leetcode_problem_title("LeetCode at Your Fingertips - LeetCode", fallback=None) is None
+
+    # Test problem title discrimination
+    assert is_leetcode_problem_title("2884. Modify Columns - LeetCode - Personal - Microsoft Edge") is True
+    assert is_leetcode_problem_title("Two Sum - LeetCode - Microsoft Edge") is True
+    assert is_leetcode_problem_title("1. Two Sum - LeetCode") is True
+    assert is_leetcode_problem_title("Problems - LeetCode - Personal - Microsoft Edge") is False
+    assert is_leetcode_problem_title("LeetCode at Your Fingertips - LeetCode") is False
+    assert is_leetcode_problem_title("Discuss - LeetCode") is False
+    assert is_leetcode_problem_title("") is False
 
 
 def test_ensure_edge_cdp_running_does_not_spawn_processes():
