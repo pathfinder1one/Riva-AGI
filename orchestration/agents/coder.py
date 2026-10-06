@@ -22,7 +22,15 @@ from orchestration.tools.builtin.file_tools import write_file
 
 logger = logging.getLogger(__name__)
 
-CODER_TOOLS = ["read_file", "write_file", "edit_file", "list_directory", "execute_command"]
+CODER_TOOLS = [
+    "read_file",
+    "write_file",
+    "edit_file",
+    "list_directory",
+    "execute_command",
+    "inspect_browser_dom",
+    "stream_code_to_editor",
+]
 
 
 def _extract_filename(text: str) -> Optional[str]:

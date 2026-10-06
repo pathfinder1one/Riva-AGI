@@ -16,7 +16,14 @@ from orchestration.orchestrator.schemas.tool import ToolCall
 
 logger = logging.getLogger(__name__)
 
-RESEARCHER_TOOLS = ["web_search", "fetch_url_content", "read_file", "list_directory"]
+RESEARCHER_TOOLS = [
+    "web_search",
+    "fetch_url_content",
+    "read_file",
+    "list_directory",
+    "inspect_browser_dom",
+    "navigate_browser",
+]
 
 
 @registry.register("researcher", AgentCapabilities(description="Handles internet research, documentation extraction, and data gathering.", tools=RESEARCHER_TOOLS, agent_level="TASK_DOER"))

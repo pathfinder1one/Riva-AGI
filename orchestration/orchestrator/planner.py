@@ -25,6 +25,10 @@ def clean_json_text(text: str) -> str:
     return cleaned.strip()
 
 DOMAIN_WORKSTREAMS = {
+    "browser_automation": {
+        "agents": ["researcher", "coder", "qa_tester"],
+        "keywords": ["leetcode", "monaco", "browser", "editor", "problem", "solve question", "ye question", "question solve", "active tab", "tab me"]
+    },
     "research_analysis": {
         "agents": ["researcher", "data_analyst", "knowledge_agent"],
         "keywords": ["research", "search", "docs", "analyze", "metrics", "knowledge", "trend", "retrieval", "look up", "find"]
@@ -61,6 +65,38 @@ def plan_hierarchical_tasks(goal: str) -> List[Dict[str, Any]]:
     tasks = []
     prev_task_id = None
     task_idx = 1
+
+    # 0. Specialized Browser Automation & Coding Workstream
+    if "browser_automation" in domains:
+        t1 = f"task_{task_idx:02d}"
+        tasks.append({
+            "task_id": t1,
+            "agent": "researcher",
+            "domain": "browser_automation",
+            "subtask": f"Inspect active browser tab via inspect_browser_dom and extract problem statement, constraints, and starter signature for: {goal}",
+            "depends_on": []
+        })
+        task_idx += 1
+
+        t2 = f"task_{task_idx:02d}"
+        tasks.append({
+            "task_id": t2,
+            "agent": "coder",
+            "domain": "browser_automation",
+            "subtask": f"Formulate optimal algorithm and stream solution code into browser editor via stream_code_to_editor for: {goal}",
+            "depends_on": [t1]
+        })
+        task_idx += 1
+
+        t3 = f"task_{task_idx:02d}"
+        tasks.append({
+            "task_id": t3,
+            "agent": "qa_tester",
+            "domain": "browser_automation",
+            "subtask": f"Execute test suite in browser via run_browser_code, assert Accepted outcome, and report results for: {goal}",
+            "depends_on": [t2]
+        })
+        return tasks
 
     # 1. Research / Knowledge Workstream if needed
     if "research_analysis" in domains:

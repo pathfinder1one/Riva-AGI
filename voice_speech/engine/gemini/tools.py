@@ -157,9 +157,12 @@ NEWS_TOOL_DECLARATION = types.FunctionDeclaration(
 ORCHESTRATOR_TOOL_DECLARATION = types.FunctionDeclaration(
     name="delegate_to_orchestrator",
     description=(
-        "Delegate complex coding, file creation (such as creating Python scripts or files like calculator.py), "
-        "software development, unit testing, deep research, or multi-step tasks "
-        "to the Riva Multi-Agent Orchestrator."
+        "Delegate ANY coding task, software development, Python script creation (e.g. calculator.py, automated tools), "
+        "file creation, testing, deep technical research, or multi-agent execution "
+        "to the Riva Multi-Agent Orchestrator backend. "
+        "CRITICAL: Whenever the user asks to write, build, or create any program, script, file, or do deep research "
+        "(e.g. 'calculator banao', 'script likho', 'research karo', 'orchestrator ko do', 'delegate to orchestrator'), "
+        "DO NOT explain or recite code verbally yourself. You MUST delegate it by calling this tool."
     ),
     parameters=types.Schema(
         type="OBJECT",
@@ -212,16 +215,16 @@ CAPTURE_PHOTO_TOOL_DECLARATION = types.FunctionDeclaration(
 TYPE_IN_APPLICATION_TOOL_DECLARATION = types.FunctionDeclaration(
     name="type_in_application",
     description=(
-        "Open a desktop application (such as Notepad or Gmail) and compose/type an essay, notes, letter, or email live onto the screen. "
-        "Call this whenever the user asks to write an essay in Notepad, write an email, or compose a message on screen "
-        "(e.g. 'notepad me essay likho', 'email likho', 'gmail me email compose karo')."
+        "Open a desktop application or website (such as Notepad, Gmail, or LinkedIn) and compose/type an essay, notes, email, or social post live onto the screen. "
+        "Call this whenever the user asks to write a note, essay, email, or LinkedIn post "
+        "(e.g. 'notepad me essay likho', 'note likho', 'email likho', 'gmail likho', 'linkedin post likho', 'tweet likho')."
     ),
     parameters=types.Schema(
         type="OBJECT",
         properties={
             "app_name": types.Schema(
                 type="STRING",
-                description="The target app to open and type into, e.g. 'notepad', 'gmail', or 'mail'."
+                description="The target app to open and type into, e.g. 'notepad', 'gmail', 'linkedin', or 'twitter'."
             ),
             "content": types.Schema(
                 type="STRING",
@@ -473,38 +476,29 @@ def _launch_browser_url(url: str) -> bool:
 
     browser_candidates = edge_candidates + chrome_candidates
 
-    profile_dir = os.path.expandvars(r"%LOCALAPPDATA%\Riva\EdgeProfile")
+    # 1. Prioritize opening in user's default browser session (where Gmail, accounts are already logged in)
     try:
-        os.makedirs(profile_dir, exist_ok=True)
-    except Exception:
-        pass
+        os.startfile(url)
+        logger.info(f"Launched URL in user's default logged-in browser via os.startfile: {url}")
+        return True
+    except Exception as e:
+        logger.debug(f"os.startfile failed: {e}")
 
-    for exe in browser_candidates:
+    # 2. Directly open in Microsoft Edge without isolating user data dir (uses default profile)
+    for exe in edge_candidates + chrome_candidates:
         if exe and os.path.exists(exe):
             try:
-                subprocess.Popen(
-                    [exe, "--remote-debugging-port=9222", f"--user-data-dir={profile_dir}", url],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                logger.info(f"Launched URL in browser (CDP port 9222 enabled): {url} via {exe}")
+                subprocess.Popen([exe, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                logger.info(f"Launched URL in default browser profile: {url} via {exe}")
                 return True
             except Exception as e:
                 logger.warning(f"Could not launch browser at {exe}: {e}")
-
-    # 2. Try os.startfile (standard Windows shell association)
-    try:
-        os.startfile(url)
-        logger.info(f"Launched URL via os.startfile: {url}")
-        return True
-    except Exception as e:
-        logger.warning(f"os.startfile failed for {url}: {e}")
 
     # 3. Try Python webbrowser module
     try:
         import webbrowser
         webbrowser.open(url)
-        logger.info(f"Launched URL via webbrowser: {url}")
+        logger.info(f"Launched URL via webbrowser.open: {url}")
         return True
     except Exception as e:
         logger.warning(f"webbrowser.open failed for {url}: {e}")
@@ -690,6 +684,20 @@ async def _handle_type_in_application(args: Dict[str, Any]) -> str:
                 _launch_browser_url(compose_url)
                 logger.info(f"Opened Gmail compose via _launch_browser_url: subject='{clean_sub}' recipient='{recipient}'")
                 return f"Opened Gmail with recipient '{recipient}', subject '{clean_sub}', and your message typed in ready to send."
+            elif "linkedin" in app_name:
+                import urllib.parse
+                encoded_text = urllib.parse.quote(content)
+                post_url = f"https://www.linkedin.com/feed/?shareActive=true&text={encoded_text}"
+                _launch_browser_url(post_url)
+                logger.info("Opened LinkedIn with draft post ready to publish.")
+                return f"Opened LinkedIn with your post typed and ready to share."
+            elif "twitter" in app_name or "x" in app_name or "tweet" in app_name:
+                import urllib.parse
+                encoded_text = urllib.parse.quote(content)
+                tweet_url = f"https://twitter.com/intent/tweet?text={encoded_text}"
+                _launch_browser_url(tweet_url)
+                logger.info("Opened Twitter with draft tweet ready to post.")
+                return f"Opened Twitter with your post typed and ready to tweet."
             else:
                 # Default to Notepad for essays, notes, documents
                 import subprocess
@@ -717,7 +725,7 @@ async def _handle_type_in_application(args: Dict[str, Any]) -> str:
     res = await loop.run_in_executor(None, _type_sync)
     if auto_send and ("gmail" in app_name or "mail" in app_name or "email" in app_name):
         from voice_speech.engine.browser.dom_inspector import send_browser_draft
-        await asyncio.sleep(2.0)
+        await asyncio.sleep(5.0)
         send_res = await send_browser_draft("gmail")
         return f"{res} {send_res}"
     return res

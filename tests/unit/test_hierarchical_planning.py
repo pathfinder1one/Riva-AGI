@@ -11,6 +11,7 @@ from orchestration.orchestrator.dag_scheduler import DAGScheduler
 from orchestration.orchestrator.schemas.task_spec import TaskSpec
 from orchestration.orchestrator.registry import registry
 from orchestration import InputData, ResponseStatus, InputType
+import orchestration.agents.knowledge_agent
 
 
 def test_detect_workstreams_multi_domain():
@@ -69,3 +70,18 @@ def test_knowledge_agent_registered_and_callable():
     assert response.agent_id == "knowledge_agent"
     assert "architecture_guide.md" in response.content
     assert response.metadata["chunks_retrieved"] > 0
+
+
+def test_plan_browser_automation_workstream():
+    goal = "Ye leetcode problem solve karo aur browser me code type karo"
+    domains = detect_workstreams(goal)
+    assert "browser_automation" in domains
+
+    tasks = plan_hierarchical_tasks(goal)
+    assert len(tasks) == 3
+    assert tasks[0]["agent"] == "researcher"
+    assert tasks[1]["agent"] == "coder"
+    assert tasks[2]["agent"] == "qa_tester"
+    assert tasks[1]["depends_on"] == [tasks[0]["task_id"]]
+    assert tasks[2]["depends_on"] == [tasks[1]["task_id"]]
+

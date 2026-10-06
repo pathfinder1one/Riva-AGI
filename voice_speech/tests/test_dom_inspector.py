@@ -193,4 +193,34 @@ async def test_dispatch_tool_call_solve_leetcode_problem():
         mock_solve.assert_called_once_with(pick_random=True, auto_run=True, auto_submit=False)
 
 
+def test_extract_leetcode_problem_title():
+    from voice_speech.engine.browser.dom_inspector import extract_leetcode_problem_title
 
+    assert extract_leetcode_problem_title("2884. Modify Columns - LeetCode - Personal - Microsoft Edge") == "2884. Modify Columns"
+    assert extract_leetcode_problem_title("Two Sum - LeetCode - Microsoft Edge") == "Two Sum"
+    assert extract_leetcode_problem_title("1. Two Sum - LeetCode") == "1. Two Sum"
+    assert extract_leetcode_problem_title("Problems - LeetCode - Personal - Microsoft Edge") == "Two Sum"
+
+
+def test_ensure_edge_cdp_running_does_not_spawn_processes():
+    from voice_speech.engine.browser.dom_inspector import ensure_edge_cdp_running
+    with patch("voice_speech.engine.browser.dom_inspector.is_cdp_active", return_value=False):
+        assert ensure_edge_cdp_running() is False
+
+
+@pytest.mark.asyncio
+async def test_solve_leetcode_problem_falls_back_to_native_when_cdp_inactive():
+    from voice_speech.engine.browser.dom_inspector import solve_leetcode_problem
+
+    with patch("voice_speech.engine.browser.dom_inspector.async_playwright") as mock_pw, \
+         patch("voice_speech.engine.browser.dom_inspector.solve_leetcode_natively", new_callable=AsyncMock) as mock_native:
+
+        mock_p_instance = MagicMock()
+        mock_p_instance.chromium.connect_over_cdp = AsyncMock(side_effect=Exception("CDP Port 9222 refused"))
+        mock_pw.return_value.__aenter__.return_value = mock_p_instance
+
+        mock_native.return_value = "✅ '2884. Modify Columns' solve ho gaya!"
+
+        res = await solve_leetcode_problem()
+        assert "solve ho gaya" in res
+        mock_native.assert_called_once()

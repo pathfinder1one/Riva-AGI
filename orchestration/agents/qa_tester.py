@@ -7,7 +7,16 @@ from orchestration.orchestrator.llm import call_gemini
 
 logger = logging.getLogger(__name__)
 
-QA_TOOLS = ["execute_command", "read_file", "write_file", "list_directory"]
+QA_TOOLS = [
+    "execute_command",
+    "read_file",
+    "write_file",
+    "list_directory",
+    "inspect_browser_dom",
+    "stream_code_to_editor",
+    "run_browser_code",
+    "submit_browser_code",
+]
 
 
 @registry.register("qa_tester", AgentCapabilities(description="Runs quality assurance tests, analyzes test suites, and verifies bug fixes.", tools=QA_TOOLS, agent_level="TASK_DOER"))

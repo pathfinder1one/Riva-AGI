@@ -25,6 +25,84 @@ def divide(a: float, b: float) -> float:
         raise ValueError("Error: Division by zero is not allowed.")
     return a / b
 
+class Calculator:
+    """Fluent chaining calculator."""
+    def __init__(self, initial_value: float = 0.0):
+        self._value = float(initial_value)
+
+    def add(self, n: float) -> "Calculator":
+        self._value += float(n)
+        return self
+
+    def subtract(self, n: float) -> "Calculator":
+        self._value -= float(n)
+        return self
+
+    def multiply(self, n: float) -> "Calculator":
+        self._value *= float(n)
+        return self
+
+    def divide(self, n: float) -> "Calculator":
+        if n == 0:
+            raise ValueError("Division by zero")
+        self._value /= float(n)
+        return self
+
+    def power(self, n: float) -> "Calculator":
+        self._value = self._value ** float(n)
+        return self
+
+    def result(self) -> float:
+        return self._value
+
+
+def calculate(expression: str) -> float:
+    """Safely evaluates a basic math expression string supporting +, -, *, /, ^, parentheses."""
+    import ast
+    import operator
+
+    expr = expression.replace("^", "**").strip()
+
+    operators = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Pow: operator.pow,
+        ast.USub: operator.neg,
+        ast.UAdd: operator.pos,
+    }
+
+    try:
+        parsed = ast.parse(expr, mode='eval')
+    except Exception as e:
+        raise ValueError(f"Invalid expression: {expression}") from e
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        elif isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            left = _eval(node.left)
+            right = _eval(node.right)
+            op_type = type(node.op)
+            if op_type in operators:
+                if op_type is ast.Div and right == 0:
+                    raise ZeroDivisionError("division by zero")
+                return operators[op_type](left, right)
+            raise ValueError(f"Unsupported binary operator: {op_type}")
+        elif isinstance(node, ast.UnaryOp):
+            operand = _eval(node.operand)
+            op_type = type(node.op)
+            if op_type in operators:
+                return operators[op_type](operand)
+            raise ValueError(f"Unsupported unary operator: {op_type}")
+        else:
+            raise ValueError(f"Unsupported expression element: {type(node)}")
+
+    return _eval(parsed)
+
 def get_number(prompt: str) -> float:
     """Helper function to safely get a float input from the user."""
     while True:

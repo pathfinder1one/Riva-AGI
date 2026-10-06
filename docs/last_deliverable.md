@@ -1,14 +1,83 @@
-The LeetCode problem "Maximum Number of Occurrences of a Substring" has been solved.
+# How a User Provides Access to Environment Variables in a Development Setup
 
-### Design Decisions
-- **Insight**: The problem constraints allow for an optimization. Any substring of length $L$ (where $minSize < L \le maxSize$) that satisfies the `maxLetters` constraint contains a substring of length `minSize` that also satisfies the same constraint. Thus, we only need to count occurrences of substrings with exactly `minSize` length.
-- **Implementation**: I utilized a `collections.Counter` to track the frequencies of valid substrings of length `minSize`. The time complexity is $O(n \cdot minSize)$ due to string slicing and set creation, which is efficient for the given constraints.
+There are several common, well-established ways a user can provide access to environment variables during development. Below is a practical guide covering the most widely used approaches, how they work, and best practices.
 
-### Verification
-- The solution was implemented in `solution.py`.
-- Verified against provided test cases:
-    - `"aababcaab", 2, 3, 4` $\rightarrow$ Expected: 2
-    - `"aaaa", 1, 3, 3` $\rightarrow$ Expected: 2
-- The script successfully executed and passed all assertions.
+---
 
-The code is now ready for submission.
+## 1. `.env` Files (Most Common in Development)
+
+A `.env` file is a plain-text file at the project root that defines key–value pairs. A loader library reads it into the process environment at startup.
+
+**Example `.env` file:**
+```bash
+DATABASE_URL=postgres://user:pass@localhost:5432/mydb
+API_KEY=sk_test_abc123
+DEBUG=true
+```
+
+**How it's loaded:**
+
+- **Node.js / JavaScript:** the `dotenv` package
+  ```js
+  require('dotenv').config();   // reads .env → process.env
+  ```
+- **Python:** `python-dotenv`
+  ```python
+  from dotenv import load_dotenv
+  load_dotenv()                 # reads .env → os.environ
+  ```
+- **Rust:** the `dotenv` crate
+  ```rust
+  dotenv::dotenv().ok();
+  ```
+- **Go:** `godotenv`
+  ```go
+  godotenv.Load()
+  ```
+
+**Key rules:**
+- Add `.env` to `.gitignore` so secrets are never committed.
+- Provide a `.env.example` (or `.env.template`) with placeholder values so teammates know which variables are required.
+
+---
+
+## 2. Exporting in the Shell
+
+For quick, one-off runs, a user can export variables directly in their terminal session:
+
+```bash
+export API_KEY="sk_test_abc123"
+export DEBUG=true
+./my-app
+```
+
+or inline for a single command:
+
+```bash
+API_KEY="sk_test_abc123" node server.js
+```
+
+These variables live only in that shell session and are inherited by child processes.
+
+---
+
+## 3. Shell Configuration Files (Persistent Per-User)
+
+Users can persist variables across sessions in shell profile files:
+
+- **Bash:** `~/.bashrc` or `~/.bash_profile`
+- **Zsh:** `~/.zshrc`
+- **Fish:** `~/.config/fish/config.fish`
+
+```bash
+# ~/.zshrc
+export DATABASE_URL="postgres://user:pass@localhost:5432/mydb"
+```
+
+> ⚠️ **Caution:** Avoid putting real secrets in these files if they're synced or shared. Prefer `.env` + a secrets manager.
+
+---
+
+## 4. OS / IDE Native Mechanisms
+
+- **macOS:** `launchctl setenv KEY value` (for GUI apps)
