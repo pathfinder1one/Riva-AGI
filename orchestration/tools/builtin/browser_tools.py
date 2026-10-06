@@ -15,11 +15,18 @@ import re
 from typing import Any, Dict, Optional
 
 from orchestration.tools.registry import tool
-from voice_speech.engine.browser.dom_inspector import (
-    DEFAULT_CDP_URL,
-    bring_browser_window_to_foreground,
-    try_launch_browser,
-)
+try:
+    from voice_speech.engine.browser.dom_inspector import (
+        DEFAULT_CDP_URL,
+        bring_browser_window_to_foreground,
+        try_launch_browser,
+    )
+except ImportError:
+    DEFAULT_CDP_URL = "http://127.0.0.1:9222"
+    def bring_browser_window_to_foreground(target_hint: str = "") -> bool:
+        return False
+    async def try_launch_browser():
+        return False
 
 logger = logging.getLogger(__name__)
 
