@@ -135,14 +135,19 @@ def web_search(query: str, max_results: int = 5) -> str:
                     results.append({"title": title, "url": url, "snippet": snippet})
 
         # Supplement or fallback with Google News RSS for news/events queries
-        if any(k in query.lower() for k in ["news", "pehle", "yesterday", "recent", "today", "happened", "ago", "hua"]) or not results:
+        if any(k in query.lower() for k in ["news", "yesterday", "recent", "today", "happened", "ago", "event", "breaking", "latest", "update"]) or not results:
             try:
+                import os
                 import xml.etree.ElementTree as ET
-                clean_term = " ".join([w for w in query.split() if w.lower() not in ["tum", "mujhe", "batao", "ki", "me", "main", "kya", "hua", "tha", "tell", "what", "happened", "in"]])
+                stop_words = {"tell", "what", "happened", "in", "about", "the", "a", "an", "is", "was", "for", "of", "to", "and", "show", "me", "give"}
+                clean_term = " ".join([w for w in query.split() if w.lower() not in stop_words])
                 if not clean_term:
                     clean_term = query
                 encoded_rss = urllib.parse.quote(clean_term)
-                rss_url = f"https://news.google.com/rss/search?q={encoded_rss}&hl=en-IN&gl=IN&ceid=IN:en"
+                geo_hl = os.environ.get("SEARCH_HL", "en-US")
+                geo_gl = os.environ.get("SEARCH_GL", "US")
+                geo_ceid = os.environ.get("SEARCH_CEID", "US:en")
+                rss_url = f"https://news.google.com/rss/search?q={encoded_rss}&hl={geo_hl}&gl={geo_gl}&ceid={geo_ceid}"
                 rss_req = urllib.request.Request(rss_url, headers={"User-Agent": _DEFAULT_USER_AGENT})
                 with urllib.request.urlopen(rss_req, timeout=4) as rss_resp:
                     rss_root = ET.fromstring(rss_resp.read())

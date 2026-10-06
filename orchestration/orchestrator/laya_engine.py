@@ -141,9 +141,9 @@ class LayaEngine:
         clean_output = (output or "").strip()
         error_indicators = ["traceback (most recent", "exception:", "syntaxerror:", "runtimeerror:", "failed to execute", "cannot find module"]
         refusal_phrases = [
-            "मेरे पास वर्तमान में", "सीधी पहुँच नहीं है", "don't have access to real-time", 
+            "do not have access to real-time", "don't have access to real-time",
             "cannot browse the internet", "as an ai language model", "as a language model",
-            "my knowledge cutoff"
+            "my knowledge cutoff", "unable to perform real-time", "i do not possess real-time"
         ]
         has_error = any(err in clean_output.lower() for err in error_indicators)
         has_refusal = any(rp in clean_output.lower() for rp in refusal_phrases)

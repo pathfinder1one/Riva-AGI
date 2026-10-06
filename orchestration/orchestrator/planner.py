@@ -27,7 +27,7 @@ def clean_json_text(text: str) -> str:
 DOMAIN_WORKSTREAMS = {
     "browser_automation": {
         "agents": ["researcher", "coder", "qa_tester"],
-        "keywords": ["leetcode", "monaco", "browser", "editor", "problem", "solve question", "ye question", "question solve", "active tab", "tab me"]
+        "keywords": ["browser", "editor", "web", "online ide", "active tab", "dom", "solve question", "coding problem", "monaco", "leetcode"]
     },
     "research_analysis": {
         "agents": ["researcher", "data_analyst", "knowledge_agent"],

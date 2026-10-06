@@ -157,12 +157,10 @@ NEWS_TOOL_DECLARATION = types.FunctionDeclaration(
 ORCHESTRATOR_TOOL_DECLARATION = types.FunctionDeclaration(
     name="delegate_to_orchestrator",
     description=(
-        "Delegate ANY coding task, software development, Python script creation (e.g. calculator.py, automated tools), "
-        "file creation, testing, deep technical research, or multi-agent execution "
-        "to the Riva Multi-Agent Orchestrator backend. "
-        "CRITICAL: Whenever the user asks to write, build, or create any program, script, file, or do deep research "
-        "(e.g. 'calculator banao', 'script likho', 'research karo', 'orchestrator ko do', 'delegate to orchestrator'), "
-        "DO NOT explain or recite code verbally yourself. You MUST delegate it by calling this tool."
+        "Delegate any software development task, multi-file project creation, standalone script implementation, "
+        "automated test execution, deep technical research, or multi-agent execution to the Riva Multi-Agent Orchestrator backend. "
+        "CRITICAL: Whenever the user asks to build a project, write a program/script, or perform technical research, "
+        "do not recite code blocks verbally. Delegate the task by calling this tool."
     ),
     parameters=types.Schema(
         type="OBJECT",
@@ -179,16 +177,16 @@ ORCHESTRATOR_TOOL_DECLARATION = types.FunctionDeclaration(
 OPEN_APPLICATION_TOOL_DECLARATION = types.FunctionDeclaration(
     name="open_application",
     description=(
-        "Open any desktop application (such as notepad, calc/calculator, camera, paint, terminal, explorer) "
-        "or open any website or web application (such as leetcode, gmail, youtube, google, chatgpt, github, or any URL) "
-        "on the user's computer when requested (e.g. 'leetcode kholo', 'leetcode ka random question kholo', 'gmail kholo', 'open youtube')."
+        "Open any desktop application (such as Notepad, Calculator, Camera, Paint, Terminal, File Explorer) "
+        "or navigate to any website, web application, or URL (e.g. any domain, https:// URL, Google, GitHub, LeetCode, YouTube) "
+        "on the user's computer."
     ),
     parameters=types.Schema(
         type="OBJECT",
         properties={
             "target": types.Schema(
                 type="STRING",
-                description="The application name (e.g. 'notepad', 'calc', 'camera') or website/URL (e.g. 'leetcode', 'gmail', 'youtube', 'https://...')."
+                description="The application name (e.g. 'notepad', 'calc', 'camera') or website/URL (e.g. 'https://...', 'github', 'leetcode', 'gmail')."
             )
         },
         required=["target"],
@@ -198,8 +196,8 @@ OPEN_APPLICATION_TOOL_DECLARATION = types.FunctionDeclaration(
 CAPTURE_PHOTO_TOOL_DECLARATION = types.FunctionDeclaration(
     name="capture_photo",
     description=(
-        "Capture a photo or selfie directly from the webcam/camera, save it as an image file on disk, and open it on the user's screen. "
-        "Call this whenever the user asks to click a photo, take a picture, or capture a selfie (e.g. 'photo click kar do', 'mera photo khicho', 'take my photo')."
+        "Capture a photo directly from the connected webcam or camera, save it as an image file on disk, and display it on the user's screen. "
+        "Call this whenever the user asks to capture an image, take a photo, or snap a picture."
     ),
     parameters=types.Schema(
         type="OBJECT",
@@ -215,28 +213,27 @@ CAPTURE_PHOTO_TOOL_DECLARATION = types.FunctionDeclaration(
 TYPE_IN_APPLICATION_TOOL_DECLARATION = types.FunctionDeclaration(
     name="type_in_application",
     description=(
-        "Open a desktop application or website (such as Notepad, Gmail, or LinkedIn) and compose/type an essay, notes, email, or social post live onto the screen. "
-        "Call this whenever the user asks to write a note, essay, email, or LinkedIn post "
-        "(e.g. 'notepad me essay likho', 'note likho', 'email likho', 'gmail likho', 'linkedin post likho', 'tweet likho')."
+        "Open a desktop application or web interface (such as Notepad, Gmail, LinkedIn, or Twitter) and compose notes, essays, emails, or social media posts directly onto the screen. "
+        "Call this whenever the user asks to compose a note, write an essay, draft an email, or prepare a social media post."
     ),
     parameters=types.Schema(
         type="OBJECT",
         properties={
             "app_name": types.Schema(
                 type="STRING",
-                description="The target app to open and type into, e.g. 'notepad', 'gmail', 'linkedin', or 'twitter'."
+                description="The target application to compose in, e.g. 'notepad', 'gmail', 'linkedin', or 'twitter'."
             ),
             "content": types.Schema(
                 type="STRING",
-                description="The full content, essay, body, or text to compose/type."
+                description="The full content, essay, body, or text to compose and type."
             ),
             "subject": types.Schema(
                 type="STRING",
-                description="Optional email subject line if writing an email."
+                description="Optional email subject line if drafting an email."
             ),
             "recipient": types.Schema(
                 type="STRING",
-                description="Optional recipient email address if sending an email."
+                description="Optional recipient email address if drafting an email."
             ),
             "auto_send": types.Schema(
                 type="BOOLEAN",
@@ -250,18 +247,16 @@ TYPE_IN_APPLICATION_TOOL_DECLARATION = types.FunctionDeclaration(
 INSPECT_BROWSER_TAB_DECLARATION = types.FunctionDeclaration(
     name="inspect_browser_tab",
     description=(
-        "Inspect the contents of a browser tab using clean DOM extraction (Antigravity-style). "
-        "For LeetCode: extracts the problem description, user's code from the Monaco editor, and test results. "
-        "For Gmail: extracts the unread email count and visible email subject lines. "
-        "Call this whenever the user asks to check, inspect, or review LeetCode code, unread emails in Gmail, "
-        "or asks 'mera code dekho', 'kya galti hai', 'unread emails kitni hain', 'tab me kya khula hai'."
+        "Inspect the semantic DOM content of any active browser tab, web application, or URL. "
+        "Extracts headings, visible content, code editor text, or inbox state across any website, developer platform, or web application. "
+        "Call this whenever the user asks to inspect, check, or review the screen, code editor, or open web page."
     ),
     parameters=types.Schema(
         type="OBJECT",
         properties={
             "target": types.Schema(
                 type="STRING",
-                description="The target site or application to inspect, e.g. 'leetcode', 'gmail', 'github', or 'active'."
+                description="The target site, domain, or application to inspect, e.g. 'active', 'leetcode', 'gmail', 'github', or any URL."
             )
         },
         required=["target"],
@@ -271,9 +266,8 @@ INSPECT_BROWSER_TAB_DECLARATION = types.FunctionDeclaration(
 SEND_CURRENT_DRAFT_DECLARATION = types.FunctionDeclaration(
     name="send_current_draft",
     description=(
-        "Clicks the Send button or triggers Ctrl+Enter to send the currently active email in Gmail or message compose window. "
-        "Call this whenever the user asks to send an email, press the send button, or confirm sending "
-        "(e.g. 'send kar do', 'send button daba do', 'email bhej do', 'send it', 'send the email', 'draft send karo', 'send daba do')."
+        "Send the active email draft or message in the browser by clicking the Send button or triggering the Ctrl+Enter keyboard shortcut. "
+        "Call this whenever the user confirms sending an email or draft message."
     ),
     parameters=types.Schema(
         type="OBJECT",
@@ -289,18 +283,16 @@ SEND_CURRENT_DRAFT_DECLARATION = types.FunctionDeclaration(
 WRITE_CODE_IN_BROWSER_DECLARATION = types.FunctionDeclaration(
     name="write_code_in_browser",
     description=(
-        "Stream and type code visibly and live into the browser code editor (such as LeetCode Monaco editor) "
-        "with smooth line-by-line typing animation and cursor tracking, then run or submit the test cases on screen. "
-        "The user will watch the code being typed live like a stream on their screen, and their physical mouse remains completely free. "
-        "Call this whenever the user asks to write code, solve the question, type the solution, or run tests "
-        "(e.g. 'code likho', 'ye solve kar do', 'live likhte hue dikhao', 'editor me type karo', 'run karo', 'submit karo')."
+        "Stream and type code visibly into the active web code editor (such as Monaco editor, LeetCode, or online IDEs) "
+        "with real-time typing animation and cursor tracking, followed by executing test cases on screen. "
+        "Call this whenever the user asks to type code or insert a solution into the browser editor."
     ),
     parameters=types.Schema(
         type="OBJECT",
         properties={
             "code": types.Schema(
                 type="STRING",
-                description="The complete, optimal solution code to type into the editor."
+                description="The complete solution code to type into the editor."
             ),
             "target": types.Schema(
                 type="STRING",
@@ -322,9 +314,8 @@ WRITE_CODE_IN_BROWSER_DECLARATION = types.FunctionDeclaration(
 NEXT_LEETCODE_QUESTION_DECLARATION = types.FunctionDeclaration(
     name="next_leetcode_question",
     description=(
-        "Navigate the browser to a new random LeetCode problem on screen. "
-        "Call this whenever the user wants another question, next question, or asks "
-        "'dusra question dikhao', 'naya question laao', 'change problem', 'next leetcode question'."
+        "Navigate the browser to a new random coding problem or question in the active coding session. "
+        "Call this whenever the user asks to change the problem or load the next question."
     ),
     parameters=types.Schema(
         type="OBJECT",
@@ -335,18 +326,17 @@ NEXT_LEETCODE_QUESTION_DECLARATION = types.FunctionDeclaration(
 SOLVE_LEETCODE_PROBLEM_DECLARATION = types.FunctionDeclaration(
     name="solve_leetcode_problem",
     description=(
-        "Autonomously solve the active LeetCode problem on the user's screen (or pick a random problem and solve it). "
-        "Inspects the problem statement and method signature directly from the browser, generates the optimal solution, "
-        "streams it live into the Monaco editor with visible line-by-line typing and cursor tracking, and clicks Run on screen. "
-        "Call this whenever the user asks to solve a LeetCode problem (e.g. 'solve karo', 'koi random problem solve karo', "
-        "'ye question solve kar do', 'problem solve karke dikhao', 'is question ka code likho', 'pick a problem and solve it')."
+        "Autonomously solve the active coding problem displayed in the browser. "
+        "Inspects problem specifications, generates the optimal algorithmic solution, "
+        "streams the code into the editor, and triggers test execution on screen. "
+        "Call this whenever the user asks to solve the coding problem displayed in the browser."
     ),
     parameters=types.Schema(
         type="OBJECT",
         properties={
             "pick_random": types.Schema(
                 type="BOOLEAN",
-                description="Whether to pick a new random problem before solving (default: false, or true if user asked for a random problem)."
+                description="Whether to pick a new random problem before solving (default: false)."
             ),
             "auto_run": types.Schema(
                 type="BOOLEAN",

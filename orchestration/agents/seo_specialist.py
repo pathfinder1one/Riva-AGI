@@ -14,7 +14,7 @@ def seo_specialist_agent(task_data: InputData) -> AgentResponse:
     
     my_key = key_manager.get_api_key_for_role("SEO_SPECIALIST")
     # System instruction tailored for this agent
-    sys_prompt = f"You are the seo_specialist agent. Your job is to fulfill the user's request expertly."
+    sys_prompt = "You are the SEO Specialist Agent. Your mission is to optimize digital content, metadata, headings, keyword relevance, and search engine discoverability."
     
     # Call the GenAI LLM
     content = call_gemini(

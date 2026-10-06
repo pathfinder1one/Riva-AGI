@@ -58,7 +58,8 @@ async def _get_cdp_browser(p, timeout_ms: int = 1500):
             await asyncio.sleep(0.2)
 
     # Auto-launch Edge with CDP enabled if not already active
-    launched = try_launch_browser("leetcode", "https://leetcode.com/problemset/")
+    default_url = os.environ.get("BROWSER_DEFAULT_URL", "https://leetcode.com/problemset/")
+    launched = try_launch_browser("edge", default_url)
     if launched:
         await asyncio.sleep(1.5)
         try:
@@ -100,10 +101,10 @@ async def _async_inspect_browser_dom(target: str = "active") -> str:
         for context in browser.contexts:
             for page in context.pages:
                 u = page.url.lower()
-                if "leetcode.com/problems/" in u and "random-one-question" not in u:
+                if any(x in u for x in ["leetcode.com/problems/", "hackerrank.com/challenges/", "codeforces.com/problemset/"]) and "random-one-question" not in u:
                     problem_page = page
                     break
-                elif target_lower in u or "leetcode.com" in u:
+                elif target_lower in u or any(x in u for x in ["leetcode.com", "hackerrank.com", "codeforces.com", "geeksforgeeks.org"]):
                     general_page = page
             if problem_page:
                 break
@@ -119,7 +120,7 @@ async def _async_inspect_browser_dom(target: str = "active") -> str:
             return json.dumps({"error": "No open browser tab found."})
 
         await target_page.bring_to_front()
-        bring_browser_window_to_foreground("leetcode" if "leetcode" in target_lower else "edge")
+        bring_browser_window_to_foreground("edge")
 
         # Fast single-batch JS evaluate to extract all semantic attributes in <1.0s
         data = await target_page.evaluate("""() => {
@@ -181,7 +182,7 @@ async def _async_stream_code_to_editor(code: str, target: str = "active", speed_
     if not clean_code:
         return json.dumps({"error": "No code provided to stream."})
 
-    bring_browser_window_to_foreground("leetcode" if "leetcode" in target.lower() else "edge")
+    bring_browser_window_to_foreground("edge")
 
     async with async_playwright() as p:
         browser = await _get_cdp_browser(p)
@@ -192,9 +193,11 @@ async def _async_stream_code_to_editor(code: str, target: str = "active", speed_
         for context in browser.contexts:
             for page in context.pages:
                 u = page.url.lower()
-                if "leetcode.com/problems/" in u or "leetcode.com" in u:
+                if any(x in u for x in ["leetcode.com/problems/", "hackerrank.com", "codeforces.com", "geeksforgeeks.org"]):
                     target_page = page
                     break
+                elif target.lower() in u or "leetcode.com" in u:
+                    target_page = page
             if target_page:
                 break
 
@@ -208,7 +211,7 @@ async def _async_stream_code_to_editor(code: str, target: str = "active", speed_
             return json.dumps({"error": "No open editor tab found."})
 
         await target_page.bring_to_front()
-        bring_browser_window_to_foreground("leetcode")
+        bring_browser_window_to_foreground("edge")
         await asyncio.sleep(0.15)
 
         # Ultra-fast typewriter animation (10-12ms cadence) with Monaco cursor tracking
@@ -272,14 +275,21 @@ async def _async_run_browser_code() -> str:
         target_page = None
         for context in browser.contexts:
             for page in context.pages:
-                if "leetcode.com" in page.url.lower():
+                u = page.url.lower()
+                if any(x in u for x in ["leetcode.com", "hackerrank.com", "codeforces.com", "geeksforgeeks.org"]):
                     target_page = page
                     break
             if target_page:
                 break
 
         if not target_page:
-            return json.dumps({"error": "No LeetCode page found."})
+            for context in browser.contexts:
+                if context.pages:
+                    target_page = context.pages[0]
+                    break
+
+        if not target_page:
+            return json.dumps({"error": "No active browser tab found."})
 
         # Visually highlight and click the Run button
         click_res = await target_page.evaluate("""() => {
@@ -362,14 +372,21 @@ async def _async_submit_browser_code() -> str:
         target_page = None
         for context in browser.contexts:
             for page in context.pages:
-                if "leetcode.com" in page.url.lower():
+                u = page.url.lower()
+                if any(x in u for x in ["leetcode.com", "hackerrank.com", "codeforces.com", "geeksforgeeks.org"]):
                     target_page = page
                     break
             if target_page:
                 break
 
         if not target_page:
-            return json.dumps({"error": "No LeetCode page found."})
+            for context in browser.contexts:
+                if context.pages:
+                    target_page = context.pages[0]
+                    break
+
+        if not target_page:
+            return json.dumps({"error": "No active browser tab found."})
 
         # Visually highlight and click Submit button
         await target_page.evaluate("""() => {
