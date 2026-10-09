@@ -3,13 +3,13 @@ Unit Tests for Hierarchical Domain Decomposition & RAG Knowledge Hook (Pillars 2
 """
 
 import pytest
-from orchestration.orchestrator.planner import (
+from orchestration.orchestrator.planning.planner import (
     detect_workstreams,
     plan_hierarchical_tasks,
 )
-from orchestration.orchestrator.dag_scheduler import DAGScheduler
+from orchestration.orchestrator.planning.dag_scheduler import DAGScheduler
 from orchestration.orchestrator.schemas.task_spec import TaskSpec
-from orchestration.orchestrator.registry import registry
+from orchestration.orchestrator.infra.registry import registry
 from orchestration import InputData, ResponseStatus, InputType
 import orchestration.agents.knowledge_agent
 

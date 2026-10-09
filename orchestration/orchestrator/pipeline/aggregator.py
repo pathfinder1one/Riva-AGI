@@ -11,8 +11,8 @@ Implements Pillars 4 & 8:
 import time
 import re
 from typing import Dict, Any, List, Optional
-from orchestration.orchestrator.registry import registry, AgentCapabilities
-from orchestration.orchestrator.whiteboard import WhiteboardContext
+from orchestration.orchestrator.infra.registry import registry, AgentCapabilities
+from orchestration.orchestrator.pipeline.whiteboard import WhiteboardContext
 from orchestration import InputData, AgentResponse, ResponseStatus
 
 

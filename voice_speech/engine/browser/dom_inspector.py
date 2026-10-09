@@ -413,7 +413,7 @@ async def solve_leetcode_natively(
 
     # Generate optimal solution via Gemini coder
     try:
-        from orchestration.orchestrator.llm import call_gemini
+        from orchestration.orchestrator.infra.llm import call_gemini
         prompt = (
             f"Write the optimal solution in Python 3 for this LeetCode problem.\n"
             f"Problem: {problem_title}\n\n"
@@ -1310,7 +1310,7 @@ async def solve_leetcode_problem(
             description = extracted.get("description", "")
 
             # Generate optimal solution via LLM
-            from orchestration.orchestrator.llm import call_gemini
+            from orchestration.orchestrator.infra.llm import call_gemini
             prompt = (
                 f"Write the optimal solution in {lang} for this LeetCode problem.\n"
                 f"Title: {title}\n"

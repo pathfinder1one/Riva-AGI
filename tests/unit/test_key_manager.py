@@ -1,6 +1,6 @@
 import os
 import pytest
-from orchestration.orchestrator.config import KeyManager
+from orchestration.orchestrator.infra.key_manager import KeyManager
 
 def test_key_manager_exact_role(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY_CODER", "coder_secret_123")

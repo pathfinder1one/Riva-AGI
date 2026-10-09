@@ -1,6 +1,6 @@
 import pytest
 from orchestration.orchestrator.schemas.task_spec import TaskSpec, TaskStatus
-from orchestration.orchestrator.dag_scheduler import DAGScheduler
+from orchestration.orchestrator.planning.dag_scheduler import DAGScheduler
 
 def test_dag_scheduler_acyclic():
     tasks = [

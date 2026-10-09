@@ -11,7 +11,7 @@ import re
 from enum import Enum
 from typing import Dict, Any, Tuple, List, Optional
 try:
-    from orchestration.orchestrator.laya_engine import laya_engine
+    from orchestration.orchestrator.routing.laya_engine import laya_engine
 except ImportError:
     laya_engine = None
 
@@ -74,7 +74,7 @@ class WorkspaceTransactionManager:
 class SecurityGate:
     def __init__(self, policy_path: str = None):
         if policy_path is None:
-            policy_path = os.path.join(os.path.dirname(__file__), "..", "config", "security_policy.json")
+            policy_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "security_policy.json")
         self.policy = self._load_policy(policy_path)
         self.blacklist = [re.compile(p, re.IGNORECASE) for p in self.policy.get("command_blacklist_patterns", [])]
         self.transaction_mgr = WorkspaceTransactionManager()

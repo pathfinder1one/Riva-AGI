@@ -20,7 +20,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "models.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "models.json"
 
 AgentLevel = Literal["CEO", "MANAGER", "TASK_DOER"]
 

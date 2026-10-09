@@ -3,12 +3,12 @@ Unit Tests for Bottom-Up Multi-Agent Aggregator & Deliverable Synthesis (Pillars
 """
 
 import pytest
-from orchestration.orchestrator.aggregator import (
+from orchestration.orchestrator.pipeline.aggregator import (
     format_executive_deliverable,
     extract_file_paths,
     aggregator_agent
 )
-from orchestration.orchestrator.whiteboard import WhiteboardContext
+from orchestration.orchestrator.pipeline.whiteboard import WhiteboardContext
 from orchestration import InputData, ResponseStatus, InputType
 
 

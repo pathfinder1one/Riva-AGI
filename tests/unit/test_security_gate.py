@@ -1,5 +1,5 @@
 import pytest
-from orchestration.orchestrator.security import SecurityGate, RiskTier
+from orchestration.orchestrator.infra.security import SecurityGate, RiskTier
 
 def test_security_gate_risk_tiers():
     gate = SecurityGate()

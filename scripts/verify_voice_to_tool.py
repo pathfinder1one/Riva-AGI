@@ -18,7 +18,7 @@ if sys.platform == "win32":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 from orchestration.orchestrator.main import run_orchestrator
-from orchestration.orchestrator.security import security_gate
+from orchestration.orchestrator.infra.security import security_gate
 
 def run_verification(task_prompt: str = None):
     if not task_prompt:

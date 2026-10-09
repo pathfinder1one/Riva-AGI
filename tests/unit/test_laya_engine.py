@@ -1,5 +1,5 @@
 import pytest
-from orchestration.orchestrator.laya_engine import LayaEngine
+from orchestration.orchestrator.routing.laya_engine import LayaEngine
 
 def test_laya_engine_route_intent():
     engine = LayaEngine(enabled=False) # Test fallback / heuristic

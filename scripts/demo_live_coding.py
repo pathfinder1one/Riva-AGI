@@ -20,7 +20,7 @@ if sys.platform == "win32":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 from playwright.async_api import async_playwright
-from orchestration.orchestrator.llm import call_gemini
+from orchestration.orchestrator.infra.llm import call_gemini
 from voice_speech.engine.browser.dom_inspector import bring_browser_window_to_foreground
 
 async def run_live_demo(voice_prompt: str = "Edge browser me LeetCode question solve karo aur live code type karke Run dabao"):

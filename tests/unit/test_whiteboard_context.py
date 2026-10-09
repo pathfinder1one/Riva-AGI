@@ -4,7 +4,7 @@ Unit Tests for WhiteboardContext & Artifact History (Pillars 3 & 7)
 
 import pytest
 import threading
-from orchestration.orchestrator.whiteboard import (
+from orchestration.orchestrator.pipeline.whiteboard import (
     WhiteboardContext,
     WhiteboardArtifact,
     ArtifactHistory,

@@ -29,8 +29,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from orchestration.orchestrator.main import run_orchestrator
-from orchestration.orchestrator.laya_engine import laya_engine
-from orchestration.orchestrator.registry import registry
+from orchestration.orchestrator.routing.laya_engine import laya_engine
+from orchestration.orchestrator.infra.registry import registry
 
 def benchmark_query(query: str = None):
     if not query:

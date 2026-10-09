@@ -5,10 +5,8 @@ Includes a simulated orchestrator router to satisfy the O1 dependency check.
 """
 import logging
 import time
-from orchestration.orchestrator.registry import registry, AgentCapabilities
 from orchestration import InputData, AgentResponse, ResponseStatus
-from orchestration.orchestrator.config import key_manager
-from orchestration.orchestrator.llm import call_gemini
+from orchestration.orchestrator.infra import registry, AgentCapabilities, key_manager, call_gemini
 
 # Setup standard logger
 logger = logging.getLogger(__name__)

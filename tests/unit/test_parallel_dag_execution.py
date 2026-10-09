@@ -5,10 +5,10 @@ Unit Tests for Parallel DAG Wave Slicing & Concurrent Async Worker Pool (Pillars
 import pytest
 import time
 from orchestration.orchestrator.schemas.task_spec import TaskSpec, TaskStatus
-from orchestration.orchestrator.dag_scheduler import DAGScheduler
-from orchestration.orchestrator.whiteboard import WhiteboardContext
-from orchestration.orchestrator.executor import AsyncWorkerPool
-from orchestration.orchestrator.registry import registry, AgentCapabilities
+from orchestration.orchestrator.planning.dag_scheduler import DAGScheduler
+from orchestration.orchestrator.pipeline.whiteboard import WhiteboardContext
+from orchestration.orchestrator.pipeline.executor import AsyncWorkerPool
+from orchestration.orchestrator.infra.registry import registry, AgentCapabilities
 from orchestration import InputData, AgentResponse, ResponseStatus
 
 

@@ -7,10 +7,10 @@ import json
 import logging
 import time
 from typing import Dict, Any, List, Optional
-from orchestration.orchestrator.registry import registry, AgentCapabilities
+from orchestration.orchestrator.infra.registry import registry, AgentCapabilities
 from orchestration import InputData, AgentResponse, ResponseStatus
-from orchestration.orchestrator.config import key_manager
-from orchestration.orchestrator.llm import call_gemini
+from orchestration.orchestrator.infra.key_manager import key_manager
+from orchestration.orchestrator.infra.llm import call_gemini
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def detect_workstreams(goal: str) -> List[str]:
     for domain, spec in DOMAIN_WORKSTREAMS.items():
         if any(kw in lower for kw in spec["keywords"]):
             matched.append(domain)
-    return matched or ["engineering"]
+    return matched
 
 def plan_hierarchical_tasks(goal: str) -> List[Dict[str, Any]]:
     """
@@ -165,7 +165,9 @@ def planner_agent(task_data: InputData) -> AgentResponse:
     # 1. Fast-Path Deterministic Hierarchical Decomposition (<2ms)
     # Generates cross-domain DAG plans instantly with zero LLM network round-trip overhead
     hierarchical_plan = plan_hierarchical_tasks(prompt)
-    if hierarchical_plan and len(hierarchical_plan) > 0:
+    is_complex = task_data.metadata.get("complexity", "simple") == "complex"
+    
+    if hierarchical_plan and len(hierarchical_plan) > 0 and not is_complex:
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(f"[Planner] Generated instant DAG plan via Fast-Path ({len(hierarchical_plan)} tasks) in {elapsed_ms:.1f}ms")
         content = json.dumps(hierarchical_plan, indent=2)
@@ -195,10 +197,12 @@ You MUST output ONLY a valid JSON array of objects with the following schema:
             cleaned = clean_json_text(content)
             parsed = json.loads(cleaned)
             if not (isinstance(parsed, list) and len(parsed) > 0):
-                content = json.dumps(hierarchical_plan, indent=2)
+                content = json.dumps(hierarchical_plan or [{"task_id": "task_01", "agent": "coder", "subtask": prompt, "depends_on": []}], indent=2)
+            else:
+                content = json.dumps(parsed, indent=2)
         except Exception as e:
-            logger.warning(f"Planner LLM failed ({e}). Defaulting to hierarchical plan.")
-            content = json.dumps(hierarchical_plan, indent=2)
+            logger.warning(f"Planner LLM failed ({e}). Defaulting to fallback plan.")
+            content = json.dumps(hierarchical_plan or [{"task_id": "task_01", "agent": "coder", "subtask": prompt, "depends_on": []}], indent=2)
 
     execution_time = (time.time() - start_time) * 1000
     

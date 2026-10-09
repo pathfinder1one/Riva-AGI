@@ -25,6 +25,85 @@ try:
 except ImportError:
     httpx = None
 
+import re
+
+def parse_duration(duration_str: str) -> float:
+    if not duration_str: return 0.0
+    val = 0.0
+    for match in re.finditer(r"([\d\.]+)(ms|s|m|h)", duration_str.lower()):
+        num = float(match.group(1))
+        unit = match.group(2)
+        if unit == "ms": val += num / 1000.0
+        elif unit == "s": val += num
+        elif unit == "m": val += num * 60
+        elif unit == "h": val += num * 3600
+    return val
+
+import threading
+
+class TokenBucket:
+    def __init__(self):
+        self.remaining = None
+        self.reset_at = 0.0
+        self.lock = threading.Lock()
+        
+    def update(self, headers):
+        with self.lock:
+            if "x-ratelimit-remaining-tokens" in headers:
+                self.remaining = int(headers["x-ratelimit-remaining-tokens"])
+                self.reset_at = time.monotonic() + parse_duration(headers.get("x-ratelimit-reset-tokens", "0s"))
+            
+    async def acquire(self, cost: int, budget_func: Callable[[], float], critical: bool = False):
+        RESERVE = 3000
+        floor = 0 if critical else RESERVE
+        wait_time = 0.0
+        while True:
+            with self.lock:
+                if self.remaining is None or (self.remaining - cost >= floor):
+                    if self.remaining is not None:
+                        self.remaining -= cost
+                    if wait_time > 0:
+                        logger.debug(f"[TokenBucket] Waited {wait_time:.2f}s for tokens.")
+                    return True
+                wait = self.reset_at - time.monotonic()
+                
+            if wait > max(0.0, min(1.5, budget_func() - 6)):
+                return False
+                
+            sleep_time = max(wait, 0.05)
+            await asyncio.sleep(sleep_time)
+            wait_time += sleep_time
+
+    def acquire_sync(self, cost: int, budget_func: Callable[[], float], critical: bool = False):
+        RESERVE = 3000
+        floor = 0 if critical else RESERVE
+        wait_time = 0.0
+        while True:
+            with self.lock:
+                if self.remaining is None or (self.remaining - cost >= floor):
+                    if self.remaining is not None:
+                        self.remaining -= cost
+                    if wait_time > 0:
+                        logger.debug(f"[TokenBucket] Sync waited {wait_time:.2f}s for tokens.")
+                    return True
+                wait = self.reset_at - time.monotonic()
+                
+            if wait > max(0.0, min(1.5, budget_func() - 6)):
+                return False
+                
+            sleep_time = max(wait, 0.05)
+            time.sleep(sleep_time)
+            wait_time += sleep_time
+
+BUCKETS = {
+    "qwen/qwen3.8-27b": TokenBucket(),
+    "openai/gpt-oss-120b": TokenBucket(),
+    "openai/gpt-oss-20b": TokenBucket(),
+    "llama-3.1-8b-instant": TokenBucket(),
+    "gemini-3.5-flash-lite": TokenBucket(),
+    "gemini-3.5-flash": TokenBucket()
+}
+
 try:
     from unittest.mock import Mock, MagicMock
 except ImportError:
@@ -42,11 +121,11 @@ except ImportError:
 
 from orchestration.tools import tool_registry
 from orchestration.orchestrator.schemas.tool import ToolCall, ToolResult
-from orchestration.orchestrator.config import key_manager
+from orchestration.orchestrator.infra.key_manager import key_manager
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "models.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "models.json"
 
 LIVE_MODELS = {"gemini-3.8-live", "gemini-3.1-flash-live-preview"}
 
@@ -298,17 +377,26 @@ def _call_groq(
                     "model": model_name,
                     "messages": messages,
                     "temperature": 0.7,
-                    "max_tokens": max_tokens
+                    "max_tokens": max_tokens,
+                    "reasoning_effort": "none"
                 }
                 if openai_tools:
                     payload["tools"] = openai_tools
                     payload["tool_choice"] = "auto"
+                    
+                cost = max_tokens + int(sum(len(str(m.get("content", ""))) for m in messages) / 4)
+                if model_name in BUCKETS and not BUCKETS[model_name].acquire_sync(cost, lambda: 10.0):
+                    logger.warning(f"[Groq] Proactive rate limit abort for {model_name}. Falling back to Gemini.")
+                    return None
 
                 res = client.post(
                     "https://api.groq.com/openai/v1/chat/completions",
                     headers=headers,
                     json=payload
                 )
+                
+                if model_name in BUCKETS:
+                    BUCKETS[model_name].update(res.headers)
 
                 if res.status_code != 200:
                     logger.warning(f"[Groq] API returned status {res.status_code}: {res.text[:200]}. Falling back to Gemini.")
@@ -440,7 +528,9 @@ def call_gemini(
     config = types.GenerateContentConfig(
         system_instruction=system_instruction,
         temperature=0.7,
-        tools=wrapped_tools if wrapped_tools else None
+        tools=wrapped_tools if wrapped_tools else None,
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(maximum_remote_calls=3) if wrapped_tools else None,
+        thinking_config=types.ThinkingConfig(thinking_budget_tokens=0) if "thinking" in model_name else None
     )
 
     candidate_models = [model_name] + [m for m in FALLBACK_MODELS if m != model_name]

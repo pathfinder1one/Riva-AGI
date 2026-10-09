@@ -7,10 +7,10 @@ import json
 import logging
 import time
 from typing import Dict, Any, List, Optional
-from orchestration.orchestrator.registry import registry, AgentCapabilities
+from orchestration.orchestrator.infra.registry import registry, AgentCapabilities
 from orchestration import InputData, AgentResponse, ResponseStatus, InputType
 from orchestration.orchestrator.schemas.task_spec import TaskSpec, TaskStatus
-from orchestration.orchestrator.dag_scheduler import DAGScheduler
+from orchestration.orchestrator.planning.dag_scheduler import DAGScheduler
 
 logger = logging.getLogger(__name__)
 

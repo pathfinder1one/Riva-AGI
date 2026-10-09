@@ -5,7 +5,7 @@ from orchestration import InputData, InputType, AgentResponse, ResponseStatus
 
 def test_reviewer_rejection_and_retry_cap(monkeypatch):
     # Mock reviewer agent to always reject
-    from orchestration.orchestrator.registry import registry
+    from orchestration.orchestrator.infra.registry import registry
     
     def mock_reviewer_reject(task_data):
         return AgentResponse(

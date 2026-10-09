@@ -10,7 +10,7 @@ Implements Pillar 5 (Track 3 Integration Boundary):
 import logging
 import time
 from typing import Dict, Any, List
-from orchestration.orchestrator.registry import registry, AgentCapabilities
+from orchestration.orchestrator.infra import registry, AgentCapabilities
 from orchestration import InputData, AgentResponse, ResponseStatus
 
 logger = logging.getLogger(__name__)

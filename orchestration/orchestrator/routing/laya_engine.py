@@ -32,7 +32,7 @@ class LayaEngine:
     def __init__(self, model_name: str = "laya-base-english", enabled: bool = None):
         if enabled is None:
             try:
-                from orchestration.orchestrator.llm import load_models_config
+                from orchestration.orchestrator.infra.llm import load_models_config
                 cfg = load_models_config().get("routing_engine", {})
                 self.enabled = cfg.get("enabled", False)
                 self.model_name = cfg.get("model_name", model_name)
@@ -83,7 +83,7 @@ class LayaEngine:
             except Exception as e:
                 logger.error(f"[LayaEngine] Choice execution error: {e}. Falling back to rules.")
 
-        from orchestration.orchestrator.router import classify_intent
+        from orchestration.orchestrator.routing.router import classify_intent
         rule_res = classify_intent(clean_text)
         agent = rule_res.get("agent", "fallback")
         confidence = float(rule_res.get("confidence", 0.0))
@@ -102,7 +102,7 @@ class LayaEngine:
         # Check if query spans multiple technical domains
         multi_domain = False
         try:
-            from orchestration.orchestrator.planner import detect_workstreams
+            from orchestration.orchestrator.planning.planner import detect_workstreams
             multi_domain = len(detect_workstreams(clean_text)) > 1
         except Exception:
             pass

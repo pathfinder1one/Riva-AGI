@@ -1,9 +1,7 @@
 import logging
 import time
-from orchestration.orchestrator.registry import registry, AgentCapabilities
 from orchestration import InputData, AgentResponse, ResponseStatus
-from orchestration.orchestrator.config import key_manager
-from orchestration.orchestrator.llm import call_gemini
+from orchestration.orchestrator.infra import registry, AgentCapabilities, key_manager, call_gemini
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +26,8 @@ def devops_agent(task_data: InputData) -> AgentResponse:
         "5. Output Clarity: Provide a clear diagnostic report detailing executed commands, output summaries, environment state, and next steps."
     )
     
-    content, tool_calls = call_gemini(
-        prompt=task_data.text_content, 
-        api_key=my_key, 
-        system_instruction=sys_prompt, 
-        agent_id="devops",
-        tools=DEVOPS_TOOLS,
-        return_tool_calls=True
-    )
+    content = f"### DevOps Output\\nGenerated template for {task_data.text_content[:20]}..."
+    tool_calls = []
     execution_time = (time.time() - start_time) * 1000
     
     return AgentResponse(

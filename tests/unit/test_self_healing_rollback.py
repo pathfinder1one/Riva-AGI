@@ -4,7 +4,7 @@ Unit Tests for Self-Healing & Transactional Auto-Rollback Gate (Pillar 9)
 
 import os
 import pytest
-from orchestration.orchestrator.security import (
+from orchestration.orchestrator.infra.security import (
     WorkspaceTransactionManager,
     SecurityGate,
 )
